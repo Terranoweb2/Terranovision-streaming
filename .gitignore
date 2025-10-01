@@ -23,7 +23,7 @@ lerna-debug.log*
 # Local env files
 .env
 .env*.local
-.env.production
+# .env.production - Uncommitted for Netlify deployment
 
 # Vercel
 .vercel

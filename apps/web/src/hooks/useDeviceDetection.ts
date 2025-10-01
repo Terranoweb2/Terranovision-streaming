@@ -109,31 +109,35 @@ export function useResponsiveClasses() {
 
   return {
     container: device.isMobile
-      ? 'px-2 py-2'
+      ? 'container mx-auto'
+      : device.isTablet
+      ? 'container mx-auto'
+      : device.isTV
+      ? 'container mx-auto'
+      : 'container mx-auto',
+
+    padding: device.isMobile
+      ? 'px-3 py-3'
       : device.isTablet
       ? 'px-4 py-4'
       : device.isTV
-      ? 'px-12 py-8'
-      : 'px-6 py-6',
+      ? 'px-8 py-6'
+      : 'px-4 py-4',
 
     text: {
-      xs: device.isMobile ? 'text-xs' : device.isTV ? 'text-base' : 'text-sm',
-      sm: device.isMobile ? 'text-sm' : device.isTV ? 'text-lg' : 'text-base',
-      base: device.isMobile ? 'text-base' : device.isTV ? 'text-xl' : 'text-lg',
-      lg: device.isMobile ? 'text-lg' : device.isTV ? 'text-2xl' : 'text-xl',
-      xl: device.isMobile ? 'text-xl' : device.isTV ? 'text-3xl' : 'text-2xl',
-      '2xl': device.isMobile ? 'text-2xl' : device.isTV ? 'text-4xl' : 'text-3xl',
+      small: device.isMobile ? 'text-xs' : device.isTV ? 'text-base' : 'text-sm',
+      base: device.isMobile ? 'text-sm' : device.isTV ? 'text-xl' : 'text-base',
+      title: device.isMobile ? 'text-lg' : device.isTV ? 'text-3xl' : 'text-xl',
+      subtitle: device.isMobile ? 'text-base' : device.isTV ? 'text-2xl' : 'text-lg',
     },
 
-    grid: {
-      channels: device.isMobile
-        ? 'grid-cols-3 gap-2'
-        : device.isTablet
-        ? 'grid-cols-4 gap-3'
-        : device.isTV
-        ? 'grid-cols-6 gap-4'
-        : 'grid-cols-5 gap-3',
-    },
+    grid: device.isMobile
+      ? 'grid grid-cols-6 sm:grid-cols-9 gap-1'
+      : device.isTablet
+      ? 'grid grid-cols-8 md:grid-cols-12 gap-1'
+      : device.isTV
+      ? 'grid grid-cols-16 lg:grid-cols-20 xl:grid-cols-24 gap-1'
+      : 'grid grid-cols-6 sm:grid-cols-9 md:grid-cols-12 lg:grid-cols-16 xl:grid-cols-20 2xl:grid-cols-24 gap-1',
 
     button: device.isTV
       ? 'min-h-[60px] text-xl px-8'

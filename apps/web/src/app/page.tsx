@@ -8,14 +8,13 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 pt-20 pb-32">
         <div className="text-center max-w-4xl mx-auto">
-          <div className="flex justify-center mb-6">
-            <div className="bg-primary-500 p-4 rounded-full">
-              <Tv className="w-16 h-16 text-secondary-900" />
-            </div>
+          <div className="flex justify-center items-center mb-8">
+            <img
+              src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
+              alt="TerranoVision"
+              className="h-32 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-            TerranoVision
-          </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-8">
             Votre plateforme de streaming TV nouvelle génération
           </p>
@@ -25,10 +24,10 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="text-lg px-8">
-              <Link href="/channels">Découvrir les chaînes</Link>
+              <Link href="/pricing">Voir les offres</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="text-lg px-8">
-              <Link href="/auth/signin">Se connecter</Link>
+              <Link href="/channels">Découvrir les chaînes</Link>
             </Button>
           </div>
         </div>

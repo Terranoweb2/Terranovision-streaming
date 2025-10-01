@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     title: 'TerranoVision',
   },
   icons: {
-    icon: '/favicon.ico',
+    icon: 'https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png',
+    apple: 'https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png',
   },
 };
 

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings } from 'lucide-react';
 import { Button } from './ui/button';
+import { QualitySelector } from './quality-selector';
+import type { XtreamQualityVariant } from '@/lib/xtream';
 
 interface VideoPlayerProps {
   channel: {
@@ -12,6 +14,8 @@ interface VideoPlayerProps {
     streamUrl: string;
     streamUrlFallback?: string;
     streamType?: string;
+    quality?: string;
+    qualityVariants?: XtreamQualityVariant[];
   };
 }
 
@@ -25,18 +29,26 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
   const [showControls, setShowControls] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [currentQuality, setCurrentQuality] = useState<string>(channel.quality || 'Auto');
+  const [selectedVariant, setSelectedVariant] = useState<XtreamQualityVariant | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     // Get HLS URL with fallback to TS
-    const getStreamUrl = async (useHls = true) => {
+    const getStreamUrl = async (useHls = true, variant?: XtreamQualityVariant) => {
       try {
         setIsLoading(true);
         setError(null);
 
-        let streamUrl = useHls ? channel.streamUrl : (channel.streamUrlFallback || channel.streamUrl);
+        // Use selected variant or default channel URLs
+        let streamUrl: string;
+        if (variant) {
+          streamUrl = useHls ? variant.urlHls : variant.urlTs;
+        } else {
+          streamUrl = useHls ? channel.streamUrl : (channel.streamUrlFallback || channel.streamUrl);
+        }
         setCurrentUrl(streamUrl);
 
         // If RTMP, request transcoding
@@ -180,7 +192,7 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
       }
     };
 
-    getStreamUrl();
+    getStreamUrl(true, selectedVariant || undefined);
 
     // Cleanup
     return () => {
@@ -188,7 +200,7 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
         hlsRef.current.destroy();
       }
     };
-  }, [channel]);
+  }, [channel, selectedVariant]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -220,6 +232,13 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
     } else {
       document.exitFullscreen();
     }
+  };
+
+  const handleQualityChange = (variant: XtreamQualityVariant) => {
+    console.log('[Player] Changing quality to:', variant.quality);
+    setCurrentQuality(variant.quality);
+    setSelectedVariant(variant);
+    setRetryCount(0);
   };
 
   let controlsTimeout: NodeJS.Timeout;
@@ -290,13 +309,13 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
 
             <div className="flex-1" />
 
-            <Button
-              size="icon"
-              variant="ghost"
-              className="text-white"
-            >
-              <Settings className="w-6 h-6" />
-            </Button>
+            {channel.qualityVariants && channel.qualityVariants.length > 1 && (
+              <QualitySelector
+                variants={channel.qualityVariants}
+                currentQuality={currentQuality}
+                onQualityChange={handleQualityChange}
+              />
+            )}
 
             <Button
               size="icon"

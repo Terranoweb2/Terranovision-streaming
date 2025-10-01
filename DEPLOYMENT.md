@@ -1,6 +1,6 @@
-# 🚀 Guide de Déploiement TerranoVision
+# 🚀 Guide de Déploiement TerranoVision sur Netlify
 
-Guide complet pour déployer TerranoVision en production.
+Guide rapide pour déployer TerranoVision sur Netlify en quelques minutes.
 
 ## 📋 Prérequis
 

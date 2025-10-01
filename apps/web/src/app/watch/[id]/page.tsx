@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { VideoPlayer } from '@/components/video-player';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, Info, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Heart, Info, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import type { XtreamChannel } from '@/lib/xtream';
 
@@ -17,6 +17,7 @@ interface PageProps {
 export default function WatchPage({ params }: PageProps) {
   const router = useRouter();
   const [channel, setChannel] = useState<XtreamChannel | null>(null);
+  const [allChannels, setAllChannels] = useState<XtreamChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -40,6 +41,8 @@ export default function WatchPage({ params }: PageProps) {
       }
 
       const data = await response.json();
+      setAllChannels(data.channels);
+
       const foundChannel = data.channels.find(
         (ch: XtreamChannel) => ch.id.toString() === params.id
       );
@@ -77,6 +80,38 @@ export default function WatchPage({ params }: PageProps) {
     setIsFavorite(!isFavorite);
   };
 
+  const navigateToChannel = (direction: 'prev' | 'next') => {
+    if (!channel || allChannels.length === 0) return;
+
+    const currentIndex = allChannels.findIndex(ch => ch.id.toString() === params.id);
+    if (currentIndex === -1) return;
+
+    let nextIndex: number;
+    if (direction === 'next') {
+      nextIndex = (currentIndex + 1) % allChannels.length;
+    } else {
+      nextIndex = currentIndex === 0 ? allChannels.length - 1 : currentIndex - 1;
+    }
+
+    const nextChannel = allChannels[nextIndex];
+    router.push(`/watch/${nextChannel.id}`);
+  };
+
+  // Navigation clavier
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        navigateToChannel('prev');
+      } else if (e.key === 'ArrowRight') {
+        navigateToChannel('next');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, allChannels]);
+
   if (loading) {
     return <PlayerLoading />;
   }
@@ -101,12 +136,22 @@ export default function WatchPage({ params }: PageProps) {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
         <div className="container mx-auto flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm" className="text-white">
-            <Link href="/channels">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
+          <div className="flex items-center gap-4">
+            <Button asChild variant="ghost" size="sm" className="text-white">
+              <Link href="/channels">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Link>
+            </Button>
+            <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+              <img
+                src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
+                alt="TerranoVision"
+                className="h-8 w-auto object-contain"
+              />
+              <span className="text-sm font-bold text-white">TerranoVision</span>
             </Link>
-          </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -133,6 +178,25 @@ export default function WatchPage({ params }: PageProps) {
             streamUrlFallback: channel.urlTs,
           }}
         />
+
+        {/* Boutons de navigation */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white"
+          onClick={() => navigateToChannel('prev')}
+        >
+          <ChevronLeft className="w-8 h-8" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white"
+          onClick={() => navigateToChannel('next')}
+        >
+          <ChevronRight className="w-8 h-8" />
+        </Button>
       </div>
 
       {/* Info Overlay (Bottom) */}

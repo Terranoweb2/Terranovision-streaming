@@ -9,6 +9,15 @@ export interface XtreamChannel {
   group?: string;
   urlHls?: string;
   urlTs: string;
+  quality?: string; // FHD, UHD/4K, HDR, SD, etc.
+  qualityVariants?: XtreamQualityVariant[];
+}
+
+export interface XtreamQualityVariant {
+  id: number;
+  quality: string;
+  urlHls: string;
+  urlTs: string;
 }
 
 export interface XtreamConfig {
@@ -99,6 +108,29 @@ async function fetchWithRetry(
 }
 
 /**
+ * Extrait la qualité depuis le nom de la chaîne
+ */
+function extractQuality(name: string): string {
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes('uhd') || nameLower.includes('4k')) return 'UHD/4K';
+  if (nameLower.includes('hdr')) return 'HDR';
+  if (nameLower.includes('fhd') || nameLower.includes('full hd')) return 'FHD';
+  if (nameLower.includes('hd')) return 'HD';
+  if (nameLower.includes('sd')) return 'SD';
+  return 'Auto';
+}
+
+/**
+ * Normalise le nom de la chaîne en supprimant les indicateurs de qualité
+ */
+function normalizeChannelName(name: string): string {
+  return name
+    .replace(/\s*(UHD|4K|HDR|FHD|FULL HD|HD|SD)\s*/gi, '')
+    .replace(/\s*\/\s*/g, ' ')
+    .trim();
+}
+
+/**
  * Récupère les chaînes live depuis l'API Xtream
  */
 export async function getXtreamChannels(config: XtreamConfig): Promise<XtreamChannel[]> {
@@ -126,15 +158,52 @@ export async function getXtreamChannels(config: XtreamConfig): Promise<XtreamCha
       throw new Error('Empty or invalid response from Xtream API');
     }
 
-    // Normaliser les données
-    const channels: XtreamChannel[] = data.map((stream) => ({
-      id: stream.stream_id,
-      name: stream.name,
-      logo: stream.stream_icon,
-      group: stream.category_name || `Category ${stream.category_id}`,
-      urlHls: `${config.baseUrl}/live/${config.username}/${config.password}/${stream.stream_id}.m3u8`,
-      urlTs: `${config.baseUrl}/live/${config.username}/${config.password}/${stream.stream_id}.ts`,
-    }));
+    // Grouper les chaînes par nom normalisé
+    const channelGroups = new Map<string, XtreamLiveStream[]>();
+
+    data.forEach((stream) => {
+      const normalizedName = normalizeChannelName(stream.name);
+      const key = `${normalizedName}_${stream.category_id}`;
+
+      if (!channelGroups.has(key)) {
+        channelGroups.set(key, []);
+      }
+      channelGroups.get(key)!.push(stream);
+    });
+
+    // Créer les chaînes avec leurs variantes de qualité
+    const channels: XtreamChannel[] = [];
+
+    channelGroups.forEach((streams, key) => {
+      // Trier par qualité (UHD > HDR > FHD > HD > SD)
+      const qualityOrder = { 'UHD/4K': 0, 'HDR': 1, 'FHD': 2, 'HD': 3, 'SD': 4, 'Auto': 5 };
+      streams.sort((a, b) => {
+        const qA = extractQuality(a.name);
+        const qB = extractQuality(b.name);
+        return (qualityOrder[qA as keyof typeof qualityOrder] || 999) - (qualityOrder[qB as keyof typeof qualityOrder] || 999);
+      });
+
+      const primaryStream = streams[0];
+      const normalizedName = normalizeChannelName(primaryStream.name);
+
+      const variants: XtreamQualityVariant[] = streams.map((stream) => ({
+        id: stream.stream_id,
+        quality: extractQuality(stream.name),
+        urlHls: `${config.baseUrl}/live/${config.username}/${config.password}/${stream.stream_id}.m3u8`,
+        urlTs: `${config.baseUrl}/live/${config.username}/${config.password}/${stream.stream_id}.ts`,
+      }));
+
+      channels.push({
+        id: primaryStream.stream_id,
+        name: normalizedName,
+        logo: primaryStream.stream_icon,
+        group: primaryStream.category_name || `Category ${primaryStream.category_id}`,
+        urlHls: `${config.baseUrl}/live/${config.username}/${config.password}/${primaryStream.stream_id}.m3u8`,
+        urlTs: `${config.baseUrl}/live/${config.username}/${config.password}/${primaryStream.stream_id}.ts`,
+        quality: extractQuality(primaryStream.name),
+        qualityVariants: variants.length > 1 ? variants : undefined,
+      });
+    });
 
     // Mettre en cache
     cache.set(cacheKey, {
@@ -142,7 +211,7 @@ export async function getXtreamChannels(config: XtreamConfig): Promise<XtreamCha
       timestamp: Date.now(),
     });
 
-    console.log(`[Xtream] Fetched ${channels.length} channels`);
+    console.log(`[Xtream] Fetched ${channels.length} channels with quality variants`);
     return channels;
   } catch (error) {
     console.error('[Xtream] Error fetching channels:', error);

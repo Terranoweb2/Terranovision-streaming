@@ -1,0 +1,33 @@
+# Dockerfile standalone (sans monorepo)
+FROM node:20-alpine
+
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+# Copy ONLY package.json (without workspace references)
+COPY package.json ./
+
+# Remove any workspace references from package.json
+RUN sed -i 's/"workspace:\*"/"latest"/g' package.json || true
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy source
+COPY src ./src
+COPY tsconfig.json ./
+
+# Build
+RUN npm run build
+
+# Clean up
+RUN npm prune --production
+
+# Create directories
+RUN mkdir -p /app/hls
+
+EXPOSE 4001
+
+CMD ["node", "dist/index.js"]

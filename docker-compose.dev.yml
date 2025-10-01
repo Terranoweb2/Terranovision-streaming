@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: terranovision-db
+    environment:
+      POSTGRES_DB: terranovision
+      POSTGRES_USER: terranovision
+      POSTGRES_PASSWORD: dev_password_change_in_production
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U terranovision']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ingest:
+    build:
+      context: .
+      dockerfile: services/ingest/Dockerfile
+    container_name: terranovision-ingest
+    ports:
+      - '4000:4000'
+    environment:
+      DATABASE_URL: postgresql://terranovision:dev_password_change_in_production@postgres:5432/terranovision?schema=public
+      M3U_ENDPOINT: ${M3U_ENDPOINT}
+      PORT_INGEST: 4000
+      NODE_ENV: development
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/ingest:/app
+      - /app/node_modules
+    command: pnpm run dev
+
+  stream-gateway:
+    build:
+      context: .
+      dockerfile: services/stream-gateway/Dockerfile
+    container_name: terranovision-gateway
+    ports:
+      - '4001:4001'
+    environment:
+      PORT_GATEWAY: 4001
+      NODE_ENV: development
+      LOG_LEVEL: info
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      HLS_SEGMENT_DURATION: 4
+      HLS_PLAYLIST_SIZE: 5
+      MAX_CONCURRENT_TRANSCODES: 10
+    volumes:
+      - ./services/stream-gateway:/app
+      - /app/node_modules
+      - hls_data:/app/hls
+    command: pnpm run dev
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: terranovision-web
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://terranovision:dev_password_change_in_production@postgres:5432/terranovision?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-secret-change-in-production}
+      INGEST_SERVICE_URL: http://ingest:4000
+      STREAM_GATEWAY_URL: http://stream-gateway:4001
+      NODE_ENV: development
+    depends_on:
+      - postgres
+      - ingest
+      - stream-gateway
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    command: pnpm run dev
+
+volumes:
+  postgres_data:
+  hls_data:

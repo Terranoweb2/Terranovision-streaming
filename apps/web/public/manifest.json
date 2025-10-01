@@ -1,0 +1,11 @@
+{
+  "name": "TerranoVision",
+  "short_name": "TerranoVision",
+  "description": "Application de streaming TV multi-plateforme",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1E3A",
+  "theme_color": "#0B1E3A",
+  "orientation": "any",
+  "icons": []
+}

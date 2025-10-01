@@ -1,0 +1,190 @@
+[
+  {
+    "id": "sample-1",
+    "externalId": "fr-tf1",
+    "name": "TF1",
+    "slug": "tf1",
+    "description": "Première chaîne de télévision française",
+    "logo": "https://example.com/logos/tf1.png",
+    "streamUrl": "https://example.com/streams/tf1.m3u8",
+    "streamType": "hls",
+    "groupName": "France - Généralistes",
+    "category": {
+      "name": "Divertissement",
+      "slug": "entertainment"
+    },
+    "tvgId": "TF1.fr",
+    "tvgName": "TF1",
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "HD",
+    "bitrate": 2500,
+    "currentProgram": {
+      "title": "Journal de 20h",
+      "startTime": "2025-09-30T20:00:00Z",
+      "endTime": "2025-09-30T20:45:00Z",
+      "description": "Les actualités du jour"
+    }
+  },
+  {
+    "id": "sample-2",
+    "externalId": "fr-france2",
+    "name": "France 2",
+    "slug": "france-2",
+    "description": "Deuxième chaîne du service public français",
+    "logo": "https://example.com/logos/france2.png",
+    "streamUrl": "https://example.com/streams/france2.m3u8",
+    "streamType": "hls",
+    "groupName": "France - Généralistes",
+    "category": {
+      "name": "Divertissement",
+      "slug": "entertainment"
+    },
+    "tvgId": "France2.fr",
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "HD",
+    "bitrate": 2500
+  },
+  {
+    "id": "sample-3",
+    "externalId": "sport-bein1",
+    "name": "beIN Sports 1",
+    "slug": "bein-sports-1",
+    "description": "Chaîne sport premium",
+    "logo": "https://example.com/logos/bein1.png",
+    "streamUrl": "rtmp://example.com/live/bein1",
+    "streamType": "rtmp",
+    "groupName": "Sport",
+    "category": {
+      "name": "Sport",
+      "slug": "sport"
+    },
+    "tvgId": "beINSports1.fr",
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "FHD",
+    "bitrate": 4500,
+    "currentProgram": {
+      "title": "Ligue 1 - PSG vs OM",
+      "startTime": "2025-09-30T21:00:00Z",
+      "endTime": "2025-09-30T23:00:00Z"
+    }
+  },
+  {
+    "id": "sample-4",
+    "externalId": "cinema-canalplus",
+    "name": "Canal+ Cinéma",
+    "slug": "canal-plus-cinema",
+    "description": "Films et séries premium",
+    "logo": "https://example.com/logos/canalcinema.png",
+    "streamUrl": "https://example.com/streams/canalcinema.m3u8",
+    "streamType": "hls",
+    "groupName": "Cinéma",
+    "category": {
+      "name": "Cinéma",
+      "slug": "movies"
+    },
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "HD",
+    "bitrate": 3500
+  },
+  {
+    "id": "sample-5",
+    "externalId": "kids-gulli",
+    "name": "Gulli",
+    "slug": "gulli",
+    "description": "Chaîne pour enfants",
+    "logo": "https://example.com/logos/gulli.png",
+    "streamUrl": "https://example.com/streams/gulli.m3u8",
+    "streamType": "hls",
+    "groupName": "Jeunesse",
+    "category": {
+      "name": "Enfants",
+      "slug": "kids"
+    },
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "SD",
+    "bitrate": 1500,
+    "currentProgram": {
+      "title": "Pat' Patrouille",
+      "startTime": "2025-09-30T16:00:00Z",
+      "endTime": "2025-09-30T16:30:00Z"
+    }
+  },
+  {
+    "id": "sample-6",
+    "externalId": "news-bfmtv",
+    "name": "BFM TV",
+    "slug": "bfm-tv",
+    "description": "Chaîne d'information en continu",
+    "logo": "https://example.com/logos/bfmtv.png",
+    "streamUrl": "https://example.com/streams/bfmtv.m3u8",
+    "streamType": "hls",
+    "groupName": "Information",
+    "category": {
+      "name": "Actualités",
+      "slug": "news"
+    },
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "HD",
+    "bitrate": 2000
+  },
+  {
+    "id": "sample-7",
+    "externalId": "music-mtv",
+    "name": "MTV France",
+    "slug": "mtv-france",
+    "description": "Musique et clips vidéo",
+    "logo": "https://example.com/logos/mtv.png",
+    "streamUrl": "https://example.com/streams/mtv.m3u8",
+    "streamType": "hls",
+    "groupName": "Musique",
+    "category": {
+      "name": "Musique",
+      "slug": "music"
+    },
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "HD",
+    "bitrate": 2500
+  },
+  {
+    "id": "sample-8",
+    "externalId": "doc-natgeo",
+    "name": "National Geographic",
+    "slug": "national-geographic",
+    "description": "Documentaires nature et science",
+    "logo": "https://example.com/logos/natgeo.png",
+    "streamUrl": "https://example.com/streams/natgeo.m3u8",
+    "streamType": "hls",
+    "groupName": "Documentaires",
+    "category": {
+      "name": "Documentaires",
+      "slug": "documentary"
+    },
+    "language": "fr",
+    "country": "FR",
+    "isActive": true,
+    "ageRating": 0,
+    "quality": "FHD",
+    "bitrate": 5000
+  }
+]

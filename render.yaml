@@ -5,7 +5,7 @@ services:
     runtime: docker
     plan: free
     region: frankfurt
-    dockerfilePath: ./services/stream-gateway/Dockerfile.render
+    dockerfilePath: ./services/stream-gateway/Dockerfile.simple
     dockerContext: ./services/stream-gateway
     envVars:
       - key: NODE_ENV

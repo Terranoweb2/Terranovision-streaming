@@ -1,0 +1,31 @@
+# Dockerfile ultra-simplifié pour Render.com
+FROM node:20-alpine
+
+# Install ffmpeg et pnpm
+RUN apk add --no-cache ffmpeg
+RUN npm install -g pnpm@8.15.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies sans workspace
+RUN pnpm install --no-frozen-lockfile
+
+# Copy source code
+COPY src ./src
+COPY tsconfig.json ./
+
+# Build TypeScript
+RUN pnpm run build
+
+# Create HLS directory
+RUN mkdir -p /app/hls
+
+# Expose port
+EXPOSE 4001
+
+# Start application
+CMD ["node", "dist/index.js"]

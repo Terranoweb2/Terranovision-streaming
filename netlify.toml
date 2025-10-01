@@ -1,6 +1,6 @@
 [build]
   base = "/"
-  command = "pnpm install && pnpm --filter @terranovision/database prisma generate && pnpm build"
+  command = "pnpm install && pnpm --filter @terranovision/database prisma generate && pnpm --filter @terranovision/web build"
   publish = "apps/web/.next"
 
 [build.environment]

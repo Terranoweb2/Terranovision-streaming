@@ -397,6 +397,14 @@ function ChannelsGrid({ channels, deviceInfo, responsiveClasses }: { channels: X
                 src={channel.logo}
                 alt={channel.name}
                 className="max-w-[60%] max-h-[60%] object-contain group-hover:scale-105 transition-transform"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<span class="text-xs">📺</span>';
+                  }
+                }}
               />
             </div>
           ) : (
@@ -454,6 +462,10 @@ function ChannelsList({ channels, deviceInfo, responsiveClasses }: { channels: X
               src={channel.logo}
               alt={channel.name}
               className={`${logoSize} object-cover rounded`}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
             />
           ) : (
             <div className={`${logoSize} flex items-center justify-center bg-secondary-700 rounded text-gray-500`}>
@@ -640,6 +652,10 @@ function ChannelsByCategory({
                         src={channel.logo}
                         alt={channel.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -665,6 +681,10 @@ function ChannelsByCategory({
                         src={channel.logo}
                         alt={channel.name}
                         className={`${logoSize} object-cover rounded`}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
                       />
                     ) : (
                       <div className={`${logoSize} flex items-center justify-center bg-secondary-700 rounded text-gray-500`}>

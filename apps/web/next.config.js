@@ -14,7 +14,7 @@ const nextConfig = {
     defaultLocale: 'fr',
   },
   images: {
-    domains: ['localhost', 'line.l-ion.xyz'],
+    domains: ['localhost', 'line.l-ion.xyz', 'res.cloudinary.com'],
     remotePatterns: [
       {
         protocol: 'http',
@@ -25,6 +25,21 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+    unoptimized: true,
+  },
+  // Headers pour gérer Mixed Content
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "upgrade-insecure-requests",
+          },
+        ],
+      },
+    ];
   },
   async rewrites() {
     return [

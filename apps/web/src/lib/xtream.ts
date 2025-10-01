@@ -87,7 +87,9 @@ async function fetchWithRetry(
       // Erreur 884, 429, 5xx → retry
       if (attempt < maxRetries - 1) {
         const delay = delays[attempt];
-        console.warn(`[Xtream] Attempt ${attempt + 1} failed (${response.status}), retrying in ${delay}ms...`);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Xtream] Attempt ${attempt + 1} failed (${response.status}), retrying in ${delay}ms...`);
+        }
         await sleep(delay);
         continue;
       }
@@ -96,7 +98,9 @@ async function fetchWithRetry(
     } catch (error) {
       if (attempt < maxRetries - 1) {
         const delay = delays[attempt];
-        console.warn(`[Xtream] Network error on attempt ${attempt + 1}, retrying in ${delay}ms...`, error);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Xtream] Network error on attempt ${attempt + 1}, retrying in ${delay}ms...`, error);
+        }
         await sleep(delay);
         continue;
       }
@@ -139,7 +143,9 @@ export async function getXtreamChannels(config: XtreamConfig): Promise<XtreamCha
   // Vérifier le cache
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('[Xtream] Returning cached channels');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Xtream] Returning cached channels');
+    }
     return cached.data;
   }
 
@@ -211,7 +217,9 @@ export async function getXtreamChannels(config: XtreamConfig): Promise<XtreamCha
       timestamp: Date.now(),
     });
 
-    console.log(`[Xtream] Fetched ${channels.length} channels with quality variants`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Xtream] Fetched ${channels.length} channels with quality variants`);
+    }
     return channels;
   } catch (error) {
     console.error('[Xtream] Error fetching channels:', error);

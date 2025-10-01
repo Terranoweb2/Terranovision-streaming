@@ -75,14 +75,10 @@ export function useDeviceDetection(): DeviceInfo {
         orientation,
       });
 
-      // Log pour debug
-      console.log('[Device Detection]', {
-        type,
-        width,
-        height,
-        userAgent: userAgent.substring(0, 100),
-        isTouchDevice,
-      });
+      // Log uniquement en développement
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Device Detection]', { type, width, height });
+      }
     };
 
     // Détection initiale

@@ -2,11 +2,11 @@ services:
   # Stream Gateway - Service de streaming vidéo
   - type: web
     name: terranovision-stream-gateway
-    runtime: node
+    runtime: docker
     plan: free
     region: frankfurt
-    buildCommand: cd services/stream-gateway && npm install && npm run build
-    startCommand: cd services/stream-gateway && npm start
+    dockerfilePath: ./services/stream-gateway/Dockerfile.render
+    dockerContext: ./services/stream-gateway
     envVars:
       - key: NODE_ENV
         value: production

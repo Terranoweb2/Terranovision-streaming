@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { ArrowLeft, Smartphone, CreditCard, Check } from 'lucide-react';
 
 type PaymentMethod = 'wave' | 'momo' | 'orange' | 'moov';
 
-export default function PaymentPage() {
+function PaymentContent() {
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan') || 'monthly';
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('wave');
@@ -240,4 +240,19 @@ function getMethodName(method: PaymentMethod): string {
     default:
       return 'Mobile Money';
   }
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-secondary-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-500 mx-auto mb-4" />
+          <p className="text-white">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <PaymentContent />
+    </Suspense>
+  );
 }

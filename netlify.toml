@@ -1,62 +1,38 @@
-# Configuration Netlify pour monorepo Next.js avec pnpm
+# Configuration Netlify simplifiée pour Next.js + pnpm monorepo
 [build]
   base = "/"
-  # Étapes : activer Corepack, installer au workspace, générer Prisma, builder uniquement @terranovision/web
-  command = "corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install --frozen-lockfile=false && pnpm --filter @terranovision/database prisma generate && pnpm --filter @terranovision/web build"
+  command = """
+    corepack enable && \
+    corepack prepare pnpm@8.15.0 --activate && \
+    pnpm install --no-frozen-lockfile && \
+    pnpm --filter @terranovision/database generate && \
+    pnpm --filter @terranovision/web build
+  """
   publish = "apps/web/.next"
 
 [build.environment]
-  NODE_VERSION = "20.17.1"
-  PNPM_VERSION = "8.15.0"
+  NODE_VERSION = "20"
+  ENABLE_EXPERIMENTAL_COREPACK = "1"
   NEXT_TELEMETRY_DISABLED = "1"
-  NPM_FLAGS = "--legacy-peer-deps"
 
-# Plugin Next.js officiel pour Netlify
+# Plugin Next.js officiel
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  directory = "apps/web/.netlify/functions"
-  node_bundler = "esbuild"
-
-# Redirects Next.js
+# Redirects et headers
 [[redirects]]
   from = "/*"
-  to = "/404.html"
-  status = 404
+  to = "/index.html"
+  status = 200
 
-# Headers de sécurité
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    X-XSS-Protection = "1; mode=block"
 
-# Cache des assets Next.js
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Cache des images
-[[headers]]
-  for = "/*.jpg"
-  [headers.values]
-    Cache-Control = "public, max-age=604800, must-revalidate"
-
-[[headers]]
-  for = "/*.png"
-  [headers.values]
-    Cache-Control = "public, max-age=604800, must-revalidate"
-
-[[headers]]
-  for = "/*.webp"
-  [headers.values]
-    Cache-Control = "public, max-age=604800, must-revalidate"

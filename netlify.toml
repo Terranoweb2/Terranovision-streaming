@@ -1,34 +1,40 @@
+# Configuration Netlify pour monorepo Next.js avec pnpm
 [build]
   base = "/"
-  command = "pnpm install && pnpm --filter @terranovision/database prisma generate && pnpm --filter @terranovision/web build"
+  # Étapes : activer Corepack, installer au workspace, générer Prisma, builder uniquement @terranovision/web
+  command = "corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install --frozen-lockfile=false && pnpm --filter @terranovision/database prisma generate && pnpm --filter @terranovision/web build"
   publish = "apps/web/.next"
 
 [build.environment]
-  NODE_VERSION = "18"
-  PNPM_VERSION = "8"
+  NODE_VERSION = "20.17.1"
+  PNPM_VERSION = "8.15.0"
+  NEXT_TELEMETRY_DISABLED = "1"
+  NPM_FLAGS = "--legacy-peer-deps"
 
+# Plugin Next.js officiel pour Netlify
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 [functions]
   directory = "apps/web/.netlify/functions"
+  node_bundler = "esbuild"
 
-# Redirects for Next.js
+# Redirects Next.js
 [[redirects]]
   from = "/*"
-  to = "/index.html"
-  status = 200
+  to = "/404.html"
+  status = 404
 
-# Headers
+# Headers de sécurité
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    X-XSS-Protection = "1; mode=block"
 
-# Cache static assets
+# Cache des assets Next.js
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
@@ -38,3 +44,19 @@
   for = "/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache des images
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, must-revalidate"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, must-revalidate"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, must-revalidate"

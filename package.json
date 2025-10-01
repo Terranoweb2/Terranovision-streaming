@@ -20,6 +20,7 @@
     "docker:prod": "docker-compose -f docker-compose.prod.yml up -d"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.13.3",
     "@turbo/gen": "^1.11.2",
     "prettier": "^3.1.1",
     "turbo": "^1.11.2",

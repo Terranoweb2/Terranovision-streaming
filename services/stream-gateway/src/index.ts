@@ -12,7 +12,7 @@ import { rateLimiter } from './middleware/rate-limiter';
 dotenv.config();
 
 const app: Express = express();
-const port = process.env.PORT_GATEWAY || 4001;
+const port = process.env.PORT || process.env.PORT_GATEWAY || 4001;
 
 // Logger
 const logger: Logger = pino({

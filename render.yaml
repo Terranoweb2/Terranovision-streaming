@@ -1,0 +1,23 @@
+services:
+  # Stream Gateway - Service de streaming vidéo
+  - type: web
+    name: terranovision-stream-gateway
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: cd services/stream-gateway && npm install && npm run build
+    startCommand: cd services/stream-gateway && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4001
+      - key: XTREAM_BASE_URL
+        sync: false
+      - key: XTREAM_USERNAME
+        sync: false
+      - key: XTREAM_PASSWORD
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://terranovision-streaming.netlify.app
+    healthCheckPath: /health

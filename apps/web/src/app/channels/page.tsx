@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Grid3x3, List, AlertCircle } from 'lucide-react';
 import type { XtreamChannel } from '@/lib/xtream';
 import { useDeviceDetection, useResponsiveClasses } from '@/hooks/useDeviceDetection';
+import { getProxiedImageUrl } from '@/lib/image-proxy';
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<XtreamChannel[]>([]);
@@ -391,10 +392,10 @@ function ChannelsGrid({ channels, deviceInfo, responsiveClasses }: { channels: X
           style={{ aspectRatio: '1/1' }}
         >
           {getQualityBadge(channel.quality)}
-          {channel.logo ? (
+          {channel.logo && getProxiedImageUrl(channel.logo) ? (
             <div className="w-full h-full flex items-center justify-center p-0.5">
               <img
-                src={channel.logo}
+                src={getProxiedImageUrl(channel.logo)}
                 alt={channel.name}
                 className="max-w-[60%] max-h-[60%] object-contain group-hover:scale-105 transition-transform"
                 onError={(e) => {
@@ -457,9 +458,9 @@ function ChannelsList({ channels, deviceInfo, responsiveClasses }: { channels: X
           href={`/watch/${channel.id}`}
           className={`flex items-center ${gap} ${padding} bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors`}
         >
-          {channel.logo ? (
+          {channel.logo && getProxiedImageUrl(channel.logo) ? (
             <img
-              src={channel.logo}
+              src={getProxiedImageUrl(channel.logo)}
               alt={channel.name}
               className={`${logoSize} object-cover rounded`}
               onError={(e) => {
@@ -647,9 +648,9 @@ function ChannelsByCategory({
                     href={`/watch/${channel.id}`}
                     className="group relative aspect-square bg-secondary-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
                   >
-                    {channel.logo ? (
+                    {channel.logo && getProxiedImageUrl(channel.logo) ? (
                       <img
-                        src={channel.logo}
+                        src={getProxiedImageUrl(channel.logo)}
                         alt={channel.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                         onError={(e) => {
@@ -676,9 +677,9 @@ function ChannelsByCategory({
                     href={`/watch/${channel.id}`}
                     className={`flex items-center ${deviceInfo.isMobile ? 'gap-3 p-3' : deviceInfo.isTV ? 'gap-6 p-6' : 'gap-4 p-4'} bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors`}
                   >
-                    {channel.logo ? (
+                    {channel.logo && getProxiedImageUrl(channel.logo) ? (
                       <img
-                        src={channel.logo}
+                        src={getProxiedImageUrl(channel.logo)}
                         alt={channel.name}
                         className={`${logoSize} object-cover rounded`}
                         onError={(e) => {

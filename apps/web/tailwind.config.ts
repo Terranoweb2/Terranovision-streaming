@@ -9,6 +9,16 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '375px',      // Small mobile
+        'sm': '640px',      // Mobile landscape
+        'md': '768px',      // Tablet portrait
+        'lg': '1024px',     // Tablet landscape / Small desktop
+        'xl': '1280px',     // Desktop
+        '2xl': '1536px',    // Large desktop
+        '3xl': '1920px',    // TV / 4K
+        '4xl': '2560px',    // Large TV / 4K+
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

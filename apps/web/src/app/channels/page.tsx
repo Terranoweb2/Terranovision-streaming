@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Search, Grid3x3, List, AlertCircle } from 'lucide-react';
 import type { XtreamChannel } from '@/lib/xtream';
+import { useDeviceDetection, useResponsiveClasses } from '@/hooks/useDeviceDetection';
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<XtreamChannel[]>([]);
@@ -15,6 +16,10 @@ export default function ChannelsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [categories, setCategories] = useState<string[]>([]);
+
+  // Device detection for responsive design
+  const deviceInfo = useDeviceDetection();
+  const responsiveClasses = useResponsiveClasses();
 
   useEffect(() => {
     fetchChannels();
@@ -218,43 +223,47 @@ export default function ChannelsPage() {
     <div className="min-h-screen bg-secondary-900">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary-800/95 backdrop-blur-sm border-b border-primary-900/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className={`${responsiveClasses.container} ${responsiveClasses.padding}`}>
+          <div className={`flex items-center ${deviceInfo.isMobile ? 'flex-col gap-3' : 'justify-between'}`}>
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <img
                 src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
                 alt="TerranoVision"
-                className="h-10 w-auto object-contain"
+                className={`${deviceInfo.isMobile ? 'h-8' : deviceInfo.isTV ? 'h-16' : 'h-10'} w-auto object-contain`}
               />
-              <span className="text-xl font-bold text-primary-500">TerranoVision</span>
+              <span className={`${responsiveClasses.text.title} font-bold text-primary-500`}>TerranoVision</span>
             </Link>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className={`flex items-center ${deviceInfo.isMobile ? 'w-full' : 'gap-4'}`}>
+              <div className="relative flex-1">
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${deviceInfo.isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-400`} />
                 <input
                   type="search"
-                  placeholder="Rechercher une chaîne..."
+                  placeholder="Rechercher..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-secondary-700 border border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm w-64"
+                  className={`pl-10 pr-4 ${deviceInfo.isMobile ? 'py-3' : 'py-2'} bg-secondary-700 border border-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${responsiveClasses.text.base} ${deviceInfo.isMobile ? 'w-full' : 'w-64'}`}
                 />
               </div>
-              <Button
-                size="sm"
-                variant={viewMode === 'grid' ? 'outline' : 'ghost'}
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3x3 className="w-4 h-4 mr-2" />
-                Grille
-              </Button>
-              <Button
-                size="sm"
-                variant={viewMode === 'list' ? 'outline' : 'ghost'}
-                onClick={() => setViewMode('list')}
-              >
-                <List className="w-4 h-4 mr-2" />
-                Liste
-              </Button>
+              {!deviceInfo.isMobile && (
+                <>
+                  <Button
+                    size={deviceInfo.isTV ? 'lg' : 'sm'}
+                    variant={viewMode === 'grid' ? 'outline' : 'ghost'}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3x3 className={`${deviceInfo.isTV ? 'w-6 h-6' : 'w-4 h-4'} mr-2`} />
+                    Grille
+                  </Button>
+                  <Button
+                    size={deviceInfo.isTV ? 'lg' : 'sm'}
+                    variant={viewMode === 'list' ? 'outline' : 'ghost'}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className={`${deviceInfo.isTV ? 'w-6 h-6' : 'w-4 h-4'} mr-2`} />
+                    Liste
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -263,11 +272,11 @@ export default function ChannelsPage() {
       {/* Categories */}
       {!loading && !error && categories.length > 0 && (
         <div className="bg-secondary-800/50 border-b border-primary-900/20">
-          <div className="container mx-auto px-4 py-3">
+          <div className={`${responsiveClasses.container} ${responsiveClasses.padding}`}>
             <div className="flex gap-2 overflow-x-auto">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                className={`${deviceInfo.isMobile ? 'px-3 py-2' : deviceInfo.isTV ? 'px-6 py-3' : 'px-4 py-1.5'} rounded-full ${responsiveClasses.text.base} whitespace-nowrap ${
                   selectedCategory === 'all'
                     ? 'bg-primary-500 text-white'
                     : 'bg-secondary-700 text-gray-300 hover:bg-secondary-600'
@@ -279,7 +288,7 @@ export default function ChannelsPage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                  className={`${deviceInfo.isMobile ? 'px-3 py-2' : deviceInfo.isTV ? 'px-6 py-3' : 'px-4 py-1.5'} rounded-full ${responsiveClasses.text.base} whitespace-nowrap ${
                     selectedCategory === cat
                       ? 'bg-primary-500 text-white'
                       : 'bg-secondary-700 text-gray-300 hover:bg-secondary-600'
@@ -294,36 +303,36 @@ export default function ChannelsPage() {
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {loading && <LoadingSkeleton />}
+      <main className={`${responsiveClasses.container} ${responsiveClasses.padding}`}>
+        {loading && <LoadingSkeleton deviceInfo={deviceInfo} responsiveClasses={responsiveClasses} />}
 
         {error && (
-          <div className="text-center py-20">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-300 mb-4">Erreur de chargement</h2>
-            <p className="text-gray-400 mb-8">{error}</p>
-            <Button onClick={fetchChannels}>Réessayer</Button>
+          <div className={`text-center ${deviceInfo.isMobile ? 'py-10' : 'py-20'}`}>
+            <AlertCircle className={`${deviceInfo.isMobile ? 'w-12 h-12' : deviceInfo.isTV ? 'w-24 h-24' : 'w-16 h-16'} text-red-500 mx-auto mb-4`} />
+            <h2 className={`${responsiveClasses.text.title} font-bold text-gray-300 mb-4`}>Erreur de chargement</h2>
+            <p className={`${responsiveClasses.text.base} text-gray-400 mb-8`}>{error}</p>
+            <Button size={deviceInfo.isMobile ? 'default' : deviceInfo.isTV ? 'lg' : 'default'} onClick={fetchChannels}>Réessayer</Button>
           </div>
         )}
 
         {!loading && !error && filteredChannels.length === 0 && (
-          <EmptyState hasChannels={channels.length > 0} />
+          <EmptyState hasChannels={channels.length > 0} deviceInfo={deviceInfo} responsiveClasses={responsiveClasses} />
         )}
 
         {!loading && !error && filteredChannels.length > 0 && (
           <>
-            <div className="mb-4 text-gray-400 text-sm">
+            <div className={`mb-4 text-gray-400 ${responsiveClasses.text.small}`}>
               {filteredChannels.length} chaîne(s) trouvée(s)
             </div>
             {selectedCategory === 'all' && !searchTerm ? (
               // Affichage groupé par catégorie
-              <ChannelsByCategory channels={channels} categories={categories} viewMode={viewMode} />
+              <ChannelsByCategory channels={channels} categories={categories} viewMode={viewMode} deviceInfo={deviceInfo} responsiveClasses={responsiveClasses} />
             ) : (
               // Affichage filtré
               viewMode === 'grid' ? (
-                <ChannelsGrid channels={filteredChannels} />
+                <ChannelsGrid channels={filteredChannels} deviceInfo={deviceInfo} responsiveClasses={responsiveClasses} />
               ) : (
-                <ChannelsList channels={filteredChannels} />
+                <ChannelsList channels={filteredChannels} deviceInfo={deviceInfo} responsiveClasses={responsiveClasses} />
               )
             )}
           </>
@@ -333,13 +342,13 @@ export default function ChannelsPage() {
   );
 }
 
-function EmptyState({ hasChannels }: { hasChannels: boolean }) {
+function EmptyState({ hasChannels, deviceInfo, responsiveClasses }: { hasChannels: boolean; deviceInfo: any; responsiveClasses: any }) {
   return (
-    <div className="text-center py-20">
-      <h2 className="text-2xl font-bold text-gray-300 mb-4">
+    <div className={`text-center ${deviceInfo.isMobile ? 'py-10' : 'py-20'}`}>
+      <h2 className={`${responsiveClasses.text.title} font-bold text-gray-300 mb-4`}>
         {hasChannels ? 'Aucun résultat' : 'Aucune chaîne disponible'}
       </h2>
-      <p className="text-gray-400 mb-8">
+      <p className={`${responsiveClasses.text.base} text-gray-400 mb-8`}>
         {hasChannels
           ? 'Essayez une autre recherche ou catégorie'
           : 'Les chaînes sont chargées depuis l\'API Xtream'}
@@ -348,7 +357,7 @@ function EmptyState({ hasChannels }: { hasChannels: boolean }) {
   );
 }
 
-function ChannelsGrid({ channels }: { channels: XtreamChannel[] }) {
+function ChannelsGrid({ channels, deviceInfo, responsiveClasses }: { channels: XtreamChannel[]; deviceInfo: any; responsiveClasses: any }) {
   const getQualityBadge = (quality?: string) => {
     if (!quality || quality === 'Auto') return null;
 
@@ -363,15 +372,17 @@ function ChannelsGrid({ channels }: { channels: XtreamChannel[] }) {
     const badge = badges[quality];
     if (!badge) return null;
 
+    const badgeSize = deviceInfo.isMobile ? 'text-[8px] px-1.5 py-0.5' : deviceInfo.isTV ? 'text-sm px-3 py-1.5' : 'text-xs px-2 py-1';
+
     return (
-      <span className={`absolute top-2 right-2 ${badge.bg} text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg`}>
+      <span className={`absolute top-2 right-2 ${badge.bg} text-white ${badgeSize} rounded-full font-bold shadow-lg`}>
         {badge.text}
       </span>
     );
   };
 
   return (
-    <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-12 lg:grid-cols-16 xl:grid-cols-20 2xl:grid-cols-24 gap-1">
+    <div className={responsiveClasses.grid}>
       {channels.map(channel => (
         <Link
           key={channel.id}
@@ -390,11 +401,11 @@ function ChannelsGrid({ channels }: { channels: XtreamChannel[] }) {
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500">
-              <span className="text-xs">📺</span>
+              <span className={deviceInfo.isMobile ? 'text-xs' : deviceInfo.isTV ? 'text-2xl' : 'text-xs'}>📺</span>
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent pt-2 pb-0.5 px-0.5">
-            <p className="text-[7px] font-bold text-white truncate leading-none">{channel.name}</p>
+            <p className={`${deviceInfo.isMobile ? 'text-[7px]' : deviceInfo.isTV ? 'text-xs' : 'text-[7px]'} font-bold text-white truncate leading-none`}>{channel.name}</p>
           </div>
         </Link>
       ))}
@@ -402,7 +413,7 @@ function ChannelsGrid({ channels }: { channels: XtreamChannel[] }) {
   );
 }
 
-function ChannelsList({ channels }: { channels: XtreamChannel[] }) {
+function ChannelsList({ channels, deviceInfo, responsiveClasses }: { channels: XtreamChannel[]; deviceInfo: any; responsiveClasses: any }) {
   const getQualityBadge = (quality?: string) => {
     if (!quality || quality === 'Auto') return null;
 
@@ -417,40 +428,46 @@ function ChannelsList({ channels }: { channels: XtreamChannel[] }) {
     const badge = badges[quality];
     if (!badge) return null;
 
+    const badgeSize = deviceInfo.isMobile ? 'text-xs px-2 py-1' : deviceInfo.isTV ? 'text-base px-3 py-1.5' : 'text-xs px-2 py-0.5';
+
     return (
-      <span className={`${badge.bg} text-white text-xs px-2 py-0.5 rounded font-bold`}>
+      <span className={`${badge.bg} text-white ${badgeSize} rounded font-bold`}>
         {badge.text}
       </span>
     );
   };
 
+  const logoSize = deviceInfo.isMobile ? 'w-12 h-12' : deviceInfo.isTV ? 'w-24 h-24' : 'w-16 h-16';
+  const padding = deviceInfo.isMobile ? 'p-3' : deviceInfo.isTV ? 'p-6' : 'p-4';
+  const gap = deviceInfo.isMobile ? 'gap-3' : deviceInfo.isTV ? 'gap-6' : 'gap-4';
+
   return (
-    <div className="space-y-2">
+    <div className={deviceInfo.isMobile ? 'space-y-1.5' : deviceInfo.isTV ? 'space-y-4' : 'space-y-2'}>
       {channels.map(channel => (
         <Link
           key={channel.id}
           href={`/watch/${channel.id}`}
-          className="flex items-center gap-4 p-4 bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors"
+          className={`flex items-center ${gap} ${padding} bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors`}
         >
           {channel.logo ? (
             <img
               src={channel.logo}
               alt={channel.name}
-              className="w-16 h-16 object-cover rounded"
+              className={`${logoSize} object-cover rounded`}
             />
           ) : (
-            <div className="w-16 h-16 flex items-center justify-center bg-secondary-700 rounded text-gray-500">
-              📺
+            <div className={`${logoSize} flex items-center justify-center bg-secondary-700 rounded text-gray-500`}>
+              <span className={deviceInfo.isTV ? 'text-3xl' : 'text-xl'}>📺</span>
             </div>
           )}
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-medium text-white">{channel.name}</h3>
+              <h3 className={`${responsiveClasses.text.base} font-medium text-white`}>{channel.name}</h3>
               {getQualityBadge(channel.quality)}
             </div>
-            {channel.group && <p className="text-sm text-gray-400">{channel.group}</p>}
+            {channel.group && <p className={`${responsiveClasses.text.small} text-gray-400`}>{channel.group}</p>}
             {channel.qualityVariants && channel.qualityVariants.length > 1 && (
-              <p className="text-xs text-primary-400 font-medium mt-1">
+              <p className={`${responsiveClasses.text.small} text-primary-400 font-medium mt-1`}>
                 {channel.qualityVariants.length} qualités disponibles
               </p>
             )}
@@ -464,11 +481,15 @@ function ChannelsList({ channels }: { channels: XtreamChannel[] }) {
 function ChannelsByCategory({
   channels,
   categories,
-  viewMode
+  viewMode,
+  deviceInfo,
+  responsiveClasses
 }: {
   channels: XtreamChannel[];
   categories: string[];
   viewMode: 'grid' | 'list';
+  deviceInfo: any;
+  responsiveClasses: any;
 }) {
   // Améliorer les noms de catégories (fonction locale)
   const getCategoryDisplayName = (category: string): string => {
@@ -587,8 +608,12 @@ function ChannelsByCategory({
     return category.replace('Category ', '📁 Catégorie ');
   };
 
+  const spacing = deviceInfo.isMobile ? 'space-y-6' : deviceInfo.isTV ? 'space-y-12' : 'space-y-8';
+  const logoSize = deviceInfo.isMobile ? 'w-12 h-12' : deviceInfo.isTV ? 'w-24 h-24' : 'w-16 h-16';
+  const padding = deviceInfo.isMobile ? 'p-2' : deviceInfo.isTV ? 'p-6' : 'p-3';
+
   return (
-    <div className="space-y-8">
+    <div className={spacing}>
       {categories.map((category) => {
         const categoryChannels = channels.filter(ch => ch.group === category);
         if (categoryChannels.length === 0) return null;
@@ -596,14 +621,14 @@ function ChannelsByCategory({
         return (
           <div key={category}>
             {/* En-tête de catégorie */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">{getCategoryDisplayName(category)}</h2>
-              <span className="text-sm text-gray-400">{categoryChannels.length} chaînes</span>
+            <div className={`flex items-center justify-between ${deviceInfo.isMobile ? 'mb-3' : 'mb-4'}`}>
+              <h2 className={`${responsiveClasses.text.subtitle} font-bold text-white`}>{getCategoryDisplayName(category)}</h2>
+              <span className={`${responsiveClasses.text.small} text-gray-400`}>{categoryChannels.length} chaînes</span>
             </div>
 
             {/* Chaînes de la catégorie */}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className={`grid ${deviceInfo.isMobile ? 'grid-cols-3 gap-2' : deviceInfo.isTV ? 'grid-cols-8 gap-6' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4'}`}>
                 {categoryChannels.map(channel => (
                   <Link
                     key={channel.id}
@@ -618,36 +643,36 @@ function ChannelsByCategory({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-500">
-                        <span className="text-4xl">📺</span>
+                        <span className={deviceInfo.isMobile ? 'text-2xl' : deviceInfo.isTV ? 'text-6xl' : 'text-4xl'}>📺</span>
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                      <p className="text-sm font-medium text-white truncate">{channel.name}</p>
+                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent ${padding}`}>
+                      <p className={`${responsiveClasses.text.small} font-medium text-white truncate`}>{channel.name}</p>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className={deviceInfo.isMobile ? 'space-y-1.5' : deviceInfo.isTV ? 'space-y-4' : 'space-y-2'}>
                 {categoryChannels.map(channel => (
                   <Link
                     key={channel.id}
                     href={`/watch/${channel.id}`}
-                    className="flex items-center gap-4 p-4 bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors"
+                    className={`flex items-center ${deviceInfo.isMobile ? 'gap-3 p-3' : deviceInfo.isTV ? 'gap-6 p-6' : 'gap-4 p-4'} bg-secondary-800 rounded-lg hover:bg-secondary-700 transition-colors`}
                   >
                     {channel.logo ? (
                       <img
                         src={channel.logo}
                         alt={channel.name}
-                        className="w-16 h-16 object-cover rounded"
+                        className={`${logoSize} object-cover rounded`}
                       />
                     ) : (
-                      <div className="w-16 h-16 flex items-center justify-center bg-secondary-700 rounded text-gray-500">
-                        📺
+                      <div className={`${logoSize} flex items-center justify-center bg-secondary-700 rounded text-gray-500`}>
+                        <span className={deviceInfo.isTV ? 'text-3xl' : 'text-xl'}>📺</span>
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-medium text-white">{channel.name}</h3>
+                      <h3 className={`${responsiveClasses.text.base} font-medium text-white`}>{channel.name}</h3>
                     </div>
                   </Link>
                 ))}
@@ -660,10 +685,12 @@ function ChannelsByCategory({
   );
 }
 
-function LoadingSkeleton() {
+function LoadingSkeleton({ deviceInfo, responsiveClasses }: { deviceInfo: any; responsiveClasses: any }) {
+  const count = deviceInfo.isMobile ? 6 : deviceInfo.isTV ? 16 : 12;
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      {Array.from({ length: 12 }).map((_, i) => (
+    <div className={responsiveClasses.grid}>
+      {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="aspect-square bg-secondary-800 rounded-lg animate-pulse" />
       ))}
     </div>

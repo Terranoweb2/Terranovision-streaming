@@ -31,9 +31,7 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: |
-          cd apps/web
-          pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Sync Capacitor
         run: |

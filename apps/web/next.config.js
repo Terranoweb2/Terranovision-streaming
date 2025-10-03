@@ -27,20 +27,8 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Headers pour gérer Mixed Content
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: "upgrade-insecure-requests",
-          },
-        ],
-      },
-    ];
-  },
+  // Headers removed - we use proxy-stream API route to handle HTTP streams in HTTPS pages
+  // The upgrade-insecure-requests CSP interferes with our proxy strategy
   async rewrites() {
     return [
       {

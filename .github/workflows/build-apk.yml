@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:  # Permet de lancer manuellement
+  push:
+    tags:
+      - 'v*'  # Déclenche sur les tags version (v1.0.0, etc.)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          pnpm install
+
+      - name: Sync Capacitor
+        run: |
+          cd apps/web
+          pnpm exec cap sync android
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x apps/web/android/gradlew
+
+      - name: Build APK
+        run: |
+          cd apps/web/android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Sign APK (optional - using debug keystore)
+        run: |
+          echo "APK built with debug signature"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terranovision-mobile-debug
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

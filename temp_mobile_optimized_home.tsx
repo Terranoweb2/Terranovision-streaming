@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Play, Info, ChevronLeft, ChevronRight, Tv, Film, Trophy } from 'lucide-react';
+import { Play, Info, ChevronLeft, ChevronRight, Tv, Film, Trophy, Search } from 'lucide-react';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 
 export default function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
@@ -90,13 +91,13 @@ export default function HomePage() {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/90 via-black/60 to-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4 md:gap-8">
               <img
                 src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
                 alt="TerranoVision"
-                className="h-8 w-auto"
+                className="h-7 md:h-8 w-auto"
               />
               <nav className="hidden md:flex items-center gap-6">
                 <Link href="/" className="text-white hover:text-cyan-400 transition-colors font-medium">
@@ -110,16 +111,22 @@ export default function HomePage() {
                 </Link>
               </nav>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Link
+                href="/channels"
+                className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <Search className="w-5 h-5 text-white" />
+              </Link>
               <Link
                 href="/auth/signin"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="hidden md:block text-gray-300 hover:text-white transition-colors"
               >
                 Se connecter
               </Link>
               <Link
                 href="/pricing"
-                className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-6 py-2 rounded-md transition-all"
+                className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-4 md:px-6 py-2 rounded-md transition-all text-sm md:text-base"
               >
                 S'abonner
               </Link>
@@ -129,7 +136,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Carousel */}
-      <section className="relative h-[85vh] overflow-hidden">
+      <section className="relative h-[60vh] md:h-[85vh] overflow-hidden">
         {heroSlides.map((slide, index) => (
           <div
             key={index}
@@ -148,30 +155,32 @@ export default function HomePage() {
             </div>
 
             <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
-              <div className="max-w-2xl space-y-6">
-                <div className="inline-block px-3 py-1 bg-cyan-500/20 border border-cyan-500 rounded text-cyan-400 text-sm font-semibold">
+              <div className="max-w-2xl space-y-3 md:space-y-6">
+                <div className="inline-block px-2 md:px-3 py-1 bg-cyan-500/20 border border-cyan-500 rounded text-cyan-400 text-xs md:text-sm font-semibold">
                   {slide.category}
                 </div>
-                <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+                <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold leading-tight">
                   {slide.title}
                 </h1>
-                <p className="text-xl text-gray-300 max-w-xl">
+                <p className="text-sm md:text-xl text-gray-300 max-w-xl line-clamp-2 md:line-clamp-none">
                   {slide.description}
                 </p>
-                <div className="flex items-center gap-4 pt-4">
+                <div className="flex items-center gap-2 md:gap-4 pt-2 md:pt-4">
                   <Link
                     href="/channels"
-                    className="flex items-center gap-2 bg-white text-black font-semibold px-8 py-3 rounded-md hover:bg-gray-200 transition-all"
+                    className="flex items-center gap-2 bg-white text-black font-semibold px-4 md:px-8 py-2 md:py-3 rounded-md hover:bg-gray-200 transition-all text-sm md:text-base"
                   >
-                    <Play className="w-5 h-5 fill-current" />
-                    Regarder maintenant
+                    <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                    <span className="hidden sm:inline">Regarder maintenant</span>
+                    <span className="sm:hidden">Regarder</span>
                   </Link>
                   <Link
                     href="/pricing"
-                    className="flex items-center gap-2 bg-gray-800/80 backdrop-blur text-white font-semibold px-8 py-3 rounded-md hover:bg-gray-700 transition-all"
+                    className="flex items-center gap-2 bg-gray-800/80 backdrop-blur text-white font-semibold px-4 md:px-8 py-2 md:py-3 rounded-md hover:bg-gray-700 transition-all text-sm md:text-base"
                   >
-                    <Info className="w-5 h-5" />
-                    Plus d'infos
+                    <Info className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="hidden sm:inline">Plus d'infos</span>
+                    <span className="sm:hidden">Infos</span>
                   </Link>
                 </div>
               </div>
@@ -179,22 +188,22 @@ export default function HomePage() {
           </div>
         ))}
 
-        {/* Carousel Controls */}
+        {/* Carousel Controls - Desktop only */}
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur p-3 rounded-full transition-all"
+          className="hidden md:block absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur p-3 rounded-full transition-all"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur p-3 rounded-full transition-all"
+          className="hidden md:block absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur p-3 rounded-full transition-all"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
 
         {/* Carousel Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
           {heroSlides.map((_, index) => (
             <button
               key={index}
@@ -208,18 +217,18 @@ export default function HomePage() {
       </section>
 
       {/* Sports EN DIRECT */}
-      <section className="py-12 bg-gradient-to-b from-black to-gray-950">
+      <section className="py-6 md:py-12 bg-gradient-to-b from-black to-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Trophy className="w-8 h-8 text-red-500" />
-            <h2 className="text-3xl font-bold">Sports en Direct</h2>
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <Trophy className="w-6 h-6 md:w-8 md:h-8 text-red-500" />
+            <h2 className="text-xl md:text-3xl font-bold">Sports en Direct</h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-3 md:gap-6">
             {sportsHighlights.map((sport, index) => (
               <Link
                 key={index}
                 href="/channels"
-                className="group relative h-72 rounded-xl overflow-hidden"
+                className="group relative h-48 md:h-72 rounded-lg md:rounded-xl overflow-hidden"
               >
                 <img
                   src={sport.image}
@@ -227,14 +236,14 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                <div className="absolute top-4 left-4">
-                  <span className="inline-block px-3 py-1 bg-red-600 text-white text-xs font-bold rounded animate-pulse">
+                <div className="absolute top-2 md:top-4 left-2 md:left-4">
+                  <span className="inline-block px-2 md:px-3 py-1 bg-red-600 text-white text-xs font-bold rounded animate-pulse">
                     {sport.label}
                   </span>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <h3 className="text-2xl font-bold mb-2">{sport.title}</h3>
-                  <p className="text-cyan-400 font-semibold">{sport.time}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6">
+                  <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-2">{sport.title}</h3>
+                  <p className="text-cyan-400 font-semibold text-sm md:text-base">{sport.time}</p>
                 </div>
               </Link>
             ))}
@@ -243,13 +252,13 @@ export default function HomePage() {
       </section>
 
       {/* Films & Séries en Vedette */}
-      <section className="py-12 bg-gray-950">
+      <section className="py-6 md:py-12 bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Film className="w-8 h-8 text-cyan-500" />
-            <h2 className="text-3xl font-bold">Films & Séries en Vedette</h2>
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <Film className="w-6 h-6 md:w-8 md:h-8 text-cyan-500" />
+            <h2 className="text-xl md:text-3xl font-bold">Films & Séries en Vedette</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
             {featuredContent.map((item, index) => (
               <Link
                 key={index}
@@ -262,8 +271,8 @@ export default function HomePage() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 transform translate-y-full group-hover:translate-y-0 transition-transform">
-                  <p className="text-sm font-semibold">{item.title}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 transform translate-y-full group-hover:translate-y-0 transition-transform">
+                  <p className="text-xs md:text-sm font-semibold">{item.title}</p>
                 </div>
               </Link>
             ))}
@@ -272,13 +281,13 @@ export default function HomePage() {
       </section>
 
       {/* Séries Populaires */}
-      <section className="py-12 bg-black">
+      <section className="py-6 md:py-12 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Tv className="w-8 h-8 text-purple-500" />
-            <h2 className="text-3xl font-bold">Séries Populaires</h2>
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <Tv className="w-6 h-6 md:w-8 md:h-8 text-purple-500" />
+            <h2 className="text-xl md:text-3xl font-bold">Séries Populaires</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
             {popularSeries.map((item, index) => (
               <Link
                 key={index}
@@ -301,10 +310,10 @@ export default function HomePage() {
       </section>
 
       {/* Films à l'Affiche */}
-      <section className="py-12 bg-gray-950">
+      <section className="py-6 md:py-12 bg-gray-950 pb-24 md:pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold mb-6">Nouveautés Cinéma</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">Nouveautés Cinéma</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4">
             {nowPlaying.map((item, index) => (
               <Link
                 key={index}
@@ -318,7 +327,7 @@ export default function HomePage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Play className="w-12 h-12 text-white fill-current drop-shadow-lg" />
+                  <Play className="w-10 h-10 md:w-12 md:h-12 text-white fill-current drop-shadow-lg" />
                 </div>
               </Link>
             ))}
@@ -326,8 +335,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-cyan-600 to-blue-600">
+      {/* CTA Section - Desktop only */}
+      <section className="hidden md:block py-20 bg-gradient-to-r from-cyan-600 to-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Plus de 2400 Chaînes à Découvrir
@@ -345,8 +354,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-black border-t border-gray-900 py-12">
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+
+      {/* Footer - Desktop only */}
+      <footer className="hidden md:block bg-black border-t border-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -376,8 +388,8 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold mb-4">Légal</h3>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><Link href="#" className="hover:text-white transition-colors">Confidentialité</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">CGU</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Confidentialité</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">CGU</Link></li>
               </ul>
             </div>
           </div>

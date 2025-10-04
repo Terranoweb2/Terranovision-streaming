@@ -1,30 +1,23 @@
 module.exports = {
   apps: [
     {
-      name: 'terranovision-web',
-      cwd: './apps/web',
-      script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3000',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '1G',
+      name: 'xtream-proxy',
+      script: './xtream-proxy-server-optimized.js',
+      instances: 4,
+      exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
+        PORT: 3001,
       },
-    },
-    {
-      name: 'terranovision-gateway',
-      cwd: './services/stream-gateway',
-      script: 'dist/index.js',
-      instances: 1,
+      max_memory_restart: '500M',
+      error_file: './logs/xtream-proxy-error.log',
+      out_file: './logs/xtream-proxy-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
       autorestart: true,
       watch: false,
-      max_memory_restart: '512M',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 4001,
-      },
+      max_restarts: 10,
+      min_uptime: '10s',
     },
   ],
 };

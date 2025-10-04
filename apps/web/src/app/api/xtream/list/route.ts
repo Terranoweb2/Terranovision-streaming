@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { withCache } from '@/lib/cache';
-import { parseM3U, m3uToXtreamChannels } from '@/lib/m3u-parser';
+import type { XtreamChannel } from '@/lib/xtream';
 
 export const dynamic = 'force-dynamic';
 
+// Credentials Xtream
+const XTREAM_CONFIG = {
+  host: 'http://line.l-ion.xyz',
+  username: 'CanaL-IPTV',
+  password: '63KQ5913',
+};
+
 /**
  * GET /api/xtream/list
- * Récupère la liste des chaînes depuis le cache playlist serveur
- * Évite erreur 509 bandwidth en utilisant le cache 1h côté serveur
+ * Récupère la liste des chaînes depuis l'API Xtream player_api.php
  */
 export async function GET(request: NextRequest) {
   try {
@@ -34,55 +40,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer les chaînes depuis le cache playlist serveur (95% réduction bandwidth)
-    const cacheKey = 'playlist:m3u_plus';
+    // Récupérer les chaînes depuis l'API Xtream avec cache
+    const cacheKey = 'xtream:channels';
     const channels = await withCache(
       cacheKey,
       async () => {
-        // Fallback sur plusieurs formats pour maximiser disponibilité
-        const formats = ['m3u_plus_m3u8', 'webtvlist_ts', 'gst_ts'];
+        const apiUrl = `${XTREAM_CONFIG.host}/player_api.php?username=${XTREAM_CONFIG.username}&password=${XTREAM_CONFIG.password}&action=get_live_streams`;
 
-        for (const format of formats) {
-          try {
-            const playlistUrl = `http://terranovision.cloud/playlist/${format}`;
-            console.log(`[API] Fetching playlist from cache server: ${format}`);
+        console.log('[API] Fetching channels from Xtream API...');
 
-            const response = await fetch(playlistUrl, {
-              headers: {
-                'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
-              },
-              signal: AbortSignal.timeout(10000), // 10s timeout
-            });
+        const response = await fetch(apiUrl, {
+          headers: {
+            'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+          },
+          signal: AbortSignal.timeout(15000), // 15s timeout
+        });
 
-            if (!response.ok) {
-              console.warn(`[API] Format ${format} failed: ${response.status}`);
-              continue; // Essayer format suivant
-            }
-
-            const playlistContent = await response.text();
-
-            // Parser M3U
-            const m3uChannels = parseM3U(playlistContent);
-
-            if (m3uChannels.length === 0) {
-              console.warn(`[API] Format ${format} returned 0 channels`);
-              continue;
-            }
-
-            // Convertir vers format Xtream
-            const xtreamChannels = m3uToXtreamChannels(m3uChannels);
-
-            console.log(`[API] Successfully loaded ${xtreamChannels.length} channels from ${format}`);
-            return xtreamChannels;
-          } catch (error: any) {
-            console.error(`[API] Error with format ${format}:`, error.message);
-            continue;
-          }
+        if (!response.ok) {
+          throw new Error(`Xtream API error: ${response.status}`);
         }
 
-        throw new Error('Tous les formats de playlist ont échoué');
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format from Xtream API');
+        }
+
+        // Convertir vers notre format
+        const xtreamChannels: XtreamChannel[] = data.map((channel: any) => ({
+          id: parseInt(channel.stream_id || channel.num),
+          name: channel.name,
+          logo: channel.stream_icon || undefined,
+          category: channel.category_name || channel.category_id || 'Général',
+          urlHls: `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${channel.stream_id}.m3u8`,
+          urlTs: `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${channel.stream_id}.ts`,
+          quality: 'HD',
+          epgChannelId: channel.epg_channel_id || undefined,
+        }));
+
+        console.log(`[API] Successfully loaded ${xtreamChannels.length} channels from Xtream API`);
+        return xtreamChannels;
       },
-      10 * 60 * 1000 // Cache 10 minutes local + cache 1h serveur = double protection
+      10 * 60 * 1000 // Cache 10 minutes
     );
 
     return NextResponse.json(

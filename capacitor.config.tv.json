@@ -1,0 +1,29 @@
+{
+  "appId": "com.terranovision.tv",
+  "appName": "TerranoVision TV",
+  "webDir": "apps/web/out",
+  "bundledWebRuntime": false,
+  "server": {
+    "hostname": "terranovision.cloud",
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "release-key.keystore",
+      "keystoreAlias": "terranovision-tv",
+      "releaseType": "APK"
+    },
+    "useLegacyBridge": false,
+    "allowMixedContent": false,
+    "flavor": "tv"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "backgroundColor": "#000000",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  }
+}

@@ -261,6 +261,46 @@ cd apps/android
 
 ## 🐳 Déploiement
 
+### 🎯 Déploiement VPS Automatique (Recommandé)
+
+**⚡ Quick Start:** [QUICK_START_VPS.md](QUICK_START_VPS.md) - Déploiement complet en 10 minutes
+
+Le projet inclut un script de déploiement automatique pour VPS:
+
+```bash
+# 1. Se connecter au VPS
+ssh root@VOTRE_IP_SERVEUR
+
+# 2. Configuration automatique du serveur (première fois)
+curl -fsSL https://raw.githubusercontent.com/VOTRE_USERNAME/terranovision/main/setup-server.sh -o setup-server.sh
+chmod +x setup-server.sh
+./setup-server.sh
+
+# 3. Cloner et déployer
+cd /var/www
+git clone https://github.com/VOTRE_USERNAME/terranovision.git
+cd terranovision
+cp .env.vps.example .env.vps
+nano .env.vps  # Éditer avec vos valeurs
+chmod +x deploy-vps.sh
+./deploy-vps.sh
+```
+
+Le script de déploiement va automatiquement:
+- ✅ Installer toutes les dépendances
+- ✅ Générer le client Prisma
+- ✅ Exécuter les migrations de base de données
+- ✅ Build tous les packages et services
+- ✅ Démarrer les services avec PM2
+- ✅ Configurer le redémarrage automatique
+
+**📚 Guides de déploiement:**
+- **[QUICK_START_VPS.md](QUICK_START_VPS.md)** - ⚡ Démarrage rapide 10 min
+- **[SERVER_ACCESS.md](SERVER_ACCESS.md)** - 🔑 Guide d'accès SSH complet
+- **[VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md)** - 📖 Documentation complète
+- [HOSTINGER_DEPLOYMENT.md](HOSTINGER_DEPLOYMENT.md) - Spécifique Hostinger
+- [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) - Déploiement Render.com
+
 ### Docker Production
 
 1. **Configurer production.env :**
@@ -280,31 +320,6 @@ docker-compose -f docker-compose.prod.yml ps
 curl http://localhost/health
 ```
 
-### Deployer sur VPS
-
-1. **Setup serveur (Ubuntu 22.04+) :**
-```bash
-# Installer Docker, Docker Compose, Nginx, FFmpeg
-sudo apt update
-sudo apt install docker.io docker-compose nginx ffmpeg
-```
-
-2. **Cloner & configurer :**
-```bash
-git clone https://github.com/your-org/terranovision.git
-cd terranovision
-cp .env.example .env
-# Éditer .env
-```
-
-3. **Lancer :**
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-4. **Configurer Nginx :**
-Copier `nginx.conf` vers `/etc/nginx/sites-available/`
-
 ### Deployer Web sur Vercel/Netlify
 
 **Vercel :**
@@ -313,7 +328,7 @@ cd apps/web
 vercel deploy --prod
 ```
 
-**Note :** Les services backend (ingest, stream-gateway) doivent tourner séparément sur un VPS.
+**Note :** Les services backend (stream-gateway) doivent tourner séparément sur un VPS.
 
 ## 📊 Monitoring & Logs
 

@@ -1,0 +1,34 @@
+{
+  "appId": "com.terranovision.app",
+  "appName": "TerranoVision",
+  "webDir": "apps/web/out",
+  "bundledWebRuntime": false,
+  "server": {
+    "hostname": "terranovision.cloud",
+    "androidScheme": "https"
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "release-key.keystore",
+      "keystoreAlias": "terranovision",
+      "releaseType": "APK"
+    },
+    "useLegacyBridge": false,
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#000000",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "androidSpinnerStyle": "large",
+      "spinnerColor": "#06B6D4"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#000000"
+    }
+  }
+}

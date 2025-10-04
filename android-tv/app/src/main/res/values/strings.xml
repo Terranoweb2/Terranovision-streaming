@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TerranoVision TV</string>
+    <string name="title_activity_main">TerranoVision TV</string>
+    <string name="package_name">com.terranovision.tv</string>
+    <string name="custom_url_scheme">terranovision</string>
+    <string name="browse_title">TerranoVision</string>
+    <string name="browse_subtitle">Plus de 2400 chaînes en direct</string>
+</resources>

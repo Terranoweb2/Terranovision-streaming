@@ -7,10 +7,12 @@ export interface XtreamChannel {
   name: string;
   logo?: string;
   group?: string;
+  category?: string;
   urlHls?: string;
   urlTs: string;
   quality?: string; // FHD, UHD/4K, HDR, SD, etc.
   qualityVariants?: XtreamQualityVariant[];
+  epgChannelId?: string;
 }
 
 export interface XtreamQualityVariant {

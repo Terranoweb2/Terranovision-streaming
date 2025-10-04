@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { VideoPlayer } from '@/components/video-player';
+import { AdvancedVideoPlayer } from '@/components/advanced-video-player';
+import { MobileHeader } from '@/components/mobile-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, Info, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, Info, AlertCircle, ChevronLeft, ChevronRight, SkipBack, SkipForward } from 'lucide-react';
 import Link from 'next/link';
 import type { XtreamChannel } from '@/lib/xtream';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 
 interface PageProps {
   params: {
@@ -16,6 +18,7 @@ interface PageProps {
 
 export default function WatchPage({ params }: PageProps) {
   const router = useRouter();
+  const deviceInfo = useDeviceDetection();
   const [channel, setChannel] = useState<XtreamChannel | null>(null);
   const [allChannels, setAllChannels] = useState<XtreamChannel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,96 +135,83 @@ export default function WatchPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button asChild variant="ghost" size="sm" className="text-white">
-              <Link href="/channels">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Retour
-              </Link>
-            </Button>
-            <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-              <img
-                src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
-                alt="TerranoVision"
-                className="h-8 w-auto object-contain"
-              />
-              <span className="text-sm font-bold text-white">TerranoVision</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white"
-              onClick={toggleFavorite}
-            >
-              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-white">
-              <Info className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-black overflow-hidden">
+      {/* Mobile Header - Always visible on mobile */}
+      {deviceInfo.isMobile && (
+        <MobileHeader
+          title={channel?.name}
+          showBackButton={true}
+          showHomeButton={true}
+          transparent={true}
+        />
+      )}
 
-      {/* Video Player */}
-      <div className="relative h-screen w-full">
-        <VideoPlayer
+      {/* Desktop Header */}
+      {!deviceInfo.isTV && !deviceInfo.isMobile && (
+        <header className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button asChild variant="ghost" size="sm" className="text-white">
+                <Link href="/channels">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour
+                </Link>
+              </Button>
+              <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+                <img
+                  src="https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png"
+                  alt="TerranoVision"
+                  className="h-8 w-auto object-contain"
+                />
+                <span className="text-sm font-bold text-white">TerranoVision</span>
+              </Link>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white"
+                onClick={toggleFavorite}
+              >
+                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-white">
+                <Info className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+      )}
+
+      {/* Video Player Container */}
+      <div className={`relative w-full ${deviceInfo.isMobile ? 'h-screen' : 'h-screen'}`}>
+        <AdvancedVideoPlayer
           channel={{
             id: channel.id.toString(),
             name: channel.name,
-            streamUrl: channel.urlHls || channel.urlTs,
+            // MOBILE FIX: Utiliser TS directement sur mobile pour éviter erreurs HLS
+            streamUrl: deviceInfo.isMobile ? (channel.urlTs || channel.urlHls || '') : (channel.urlHls || channel.urlTs || ''),
             streamUrlFallback: channel.urlTs,
+            quality: channel.quality,
+            qualityVariants: channel.qualityVariants,
+            logo: channel.logo
           }}
+          onPrevious={() => navigateToChannel('prev')}
+          onNext={() => navigateToChannel('next')}
         />
-
-        {/* Boutons de navigation */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white"
-          onClick={() => navigateToChannel('prev')}
-        >
-          <ChevronLeft className="w-8 h-8" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/50 hover:bg-black/70 text-white"
-          onClick={() => navigateToChannel('next')}
-        >
-          <ChevronRight className="w-8 h-8" />
-        </Button>
       </div>
 
-      {/* Info Overlay (Bottom) */}
-      <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/90 to-transparent p-6 pointer-events-none">
-        <div className="container mx-auto">
-          <div className="flex items-start gap-4">
-            {channel.logo && (
-              <img
-                src={channel.logo}
-                alt={channel.name}
-                className="w-16 h-16 rounded-lg object-cover"
-              />
-            )}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-white mb-2">{channel.name}</h1>
-              {channel.group && (
-                <p className="text-sm text-primary-400 mb-2">{channel.group}</p>
-              )}
-              <p className="text-xs text-gray-400">
-                Stream: {channel.urlHls ? 'HLS' : 'TS'} • ID: {channel.id}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Safe area padding for mobile */}
+      <style jsx global>{`
+        .pb-safe {
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+        @supports (height: 100dvh) {
+          .h-screen {
+            height: 100dvh;
+          }
+        }
+      `}</style>
     </div>
   );
 }

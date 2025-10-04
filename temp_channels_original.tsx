@@ -50,7 +50,7 @@ export default function ChannelsPage() {
 
       // Extraire les catégories uniques
       const uniqueCategories = Array.from(
-        new Set(data.channels.map((ch: XtreamChannel) => ch.category).filter(Boolean))
+        new Set(data.channels.map((ch: XtreamChannel) => ch.group).filter(Boolean))
       ) as string[];
       setCategories(uniqueCategories);
     } catch (err: any) {
@@ -65,7 +65,7 @@ export default function ChannelsPage() {
   const getCategoryDisplayName = (category: string): string => {
     // Extraire le contenu de la chaîne pour détecter les types
     const categoryLower = category.toLowerCase();
-    const channelsInCat = channels.filter(ch => ch.category === category);
+    const channelsInCat = channels.filter(ch => ch.group === category);
     const channelNames = channelsInCat.map(ch => ch.name.toLowerCase()).join(' ');
 
     // 1. Adulte (priorité haute pour filtrage)
@@ -215,7 +215,7 @@ export default function ChannelsPage() {
 
     // Filtrer par catégorie
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(ch => ch.category === selectedCategory);
+      filtered = filtered.filter(ch => ch.group === selectedCategory);
     }
 
     setFilteredChannels(filtered);
@@ -281,7 +281,7 @@ export default function ChannelsPage() {
 
       {/* Mobile Search Bar */}
       {deviceInfo.isMobile && (
-        <div className="bg-secondary-800 border-b border-primary-900/20 px-3 py-2">
+        <div className="sticky top-14 z-40 bg-secondary-800 border-b border-primary-900/20 px-3 py-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -297,9 +297,9 @@ export default function ChannelsPage() {
 
       {/* Categories */}
       {!loading && !error && categories.length > 0 && (
-        <div className={`${deviceInfo.isMobile ? 'sticky top-14 z-40' : ''} bg-secondary-800/50 border-b border-primary-900/20`}>
+        <div className="bg-secondary-800/50 border-b border-primary-900/20">
           <div className={`${responsiveClasses.container} ${responsiveClasses.padding}`}>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="flex gap-2 overflow-x-auto">
               <button
                 onClick={() => setSelectedCategory('all')}
                 className={`${deviceInfo.isMobile ? 'px-3 py-2' : deviceInfo.isTV ? 'px-6 py-3' : 'px-4 py-1.5'} rounded-full ${responsiveClasses.text.base} whitespace-nowrap ${
@@ -320,7 +320,7 @@ export default function ChannelsPage() {
                       : 'bg-secondary-700 text-gray-300 hover:bg-secondary-600'
                   }`}
                 >
-                  {getCategoryDisplayName(cat)} ({channels.filter(ch => ch.category === cat).length})
+                  {getCategoryDisplayName(cat)} ({channels.filter(ch => ch.group === cat).length})
                 </button>
               ))}
             </div>
@@ -532,7 +532,7 @@ function ChannelsByCategory({
   // Améliorer les noms de catégories (fonction locale)
   const getCategoryDisplayName = (category: string): string => {
     const categoryLower = category.toLowerCase();
-    const channelsInCat = channels.filter(ch => ch.category === category);
+    const channelsInCat = channels.filter(ch => ch.group === category);
     const channelNames = channelsInCat.map(ch => ch.name.toLowerCase()).join(' ');
 
     // 1. Adulte
@@ -653,7 +653,7 @@ function ChannelsByCategory({
   return (
     <div className={spacing}>
       {categories.map((category) => {
-        const categoryChannels = channels.filter(ch => ch.category === category);
+        const categoryChannels = channels.filter(ch => ch.group === category);
         if (categoryChannels.length === 0) return null;
 
         return (

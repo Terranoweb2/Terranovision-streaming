@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { ForceHttpRedirect } from '@/components/force-http-redirect';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'TerranoVision',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   icons: {
     icon: 'https://res.cloudinary.com/dxy0fiahv/image/upload/v1736099542/TERRANOVISION_LOGO_copie_plw60b.png',
@@ -37,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body className={inter.className}>
+        <ForceHttpRedirect />
         {children}
         <Toaster />
       </body>

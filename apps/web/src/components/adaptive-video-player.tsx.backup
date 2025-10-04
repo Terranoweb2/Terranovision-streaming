@@ -1,0 +1,498 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Hls from 'hls.js';
+import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, Info } from 'lucide-react';
+import { Button } from './ui/button';
+import { QualitySelector } from './quality-selector';
+import type { XtreamQualityVariant } from '@/lib/xtream';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
+import { useTVNavigation } from '@/hooks/useTVNavigation';
+import { useGestures } from '@/hooks/useGestures';
+
+interface AdaptiveVideoPlayerProps {
+  channel: {
+    id: string;
+    name: string;
+    streamUrl: string;
+    streamUrlFallback?: string;
+    streamType?: string;
+    quality?: string;
+    qualityVariants?: XtreamQualityVariant[];
+  };
+  onPreviousChannel?: () => void;
+  onNextChannel?: () => void;
+}
+
+export function AdaptiveVideoPlayer({ channel, onPreviousChannel, onNextChannel }: AdaptiveVideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showControls, setShowControls] = useState(true);
+  const [showInfo, setShowInfo] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [currentQuality, setCurrentQuality] = useState<string>(channel.quality || 'Auto');
+  const [selectedVariant, setSelectedVariant] = useState<XtreamQualityVariant | null>(null);
+
+  const deviceInfo = useDeviceDetection();
+
+  // Navigation TV avec télécommande
+  useTVNavigation({
+    onEnter: togglePlay,
+    onLeft: () => seekRelative(-10),
+    onRight: () => seekRelative(10),
+    onUp: () => setShowControls(true),
+    onDown: () => setShowControls(false),
+    onBack: () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    },
+    enabled: deviceInfo.isTV,
+  });
+
+  // Gestures tactiles pour mobile/tablette
+  useGestures(containerRef, {
+    onSwipeLeft: onNextChannel,
+    onSwipeRight: onPreviousChannel,
+    onDoubleTap: toggleFullscreen,
+    onTap: togglePlay,
+    onSwipeUp: () => adjustVolume(0.1),
+    onSwipeDown: () => adjustVolume(-0.1),
+  }, {
+    enabled: deviceInfo.isMobile || deviceInfo.isTablet,
+  });
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const getStreamUrl = async (useHls = true, variant?: XtreamQualityVariant) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        let streamUrl: string;
+        if (variant) {
+          streamUrl = useHls ? variant.urlHls : variant.urlTs;
+        } else {
+          streamUrl = useHls ? channel.streamUrl : (channel.streamUrlFallback || channel.streamUrl);
+        }
+
+        // ⚠️ PROXY DÉSACTIVÉ - Serveur Xtream bloque toutes les requêtes proxy (403/458/509)
+        // Solution finale: Chargement DIRECT depuis le navigateur utilisateur
+        // Inconvénient: Erreurs Mixed Content possibles (HTTP dans HTTPS)
+        // Avantage: Contourne les limitations IP du serveur IPTV
+
+        // Pas de modification de l'URL - chargement direct
+
+        setCurrentUrl(streamUrl);
+
+        if (channel.streamType === 'rtmp' || streamUrl.startsWith('rtmp')) {
+          const response = await fetch('/api/stream/transcode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              channelId: channel.id,
+              inputUrl: streamUrl,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to start transcoding');
+          }
+
+          const data = await response.json();
+          streamUrl = data.outputUrl;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        if (Hls.isSupported() && useHls) {
+          // 📱 Configuration optimisée pour mobile/tablette
+          const hlsConfig = deviceInfo.isMobile || deviceInfo.isTablet ? {
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 30,
+            maxLoadingDelay: 8,
+            maxBufferLength: 15,
+            maxMaxBufferLength: 30,
+            manifestLoadingTimeOut: 15000,
+            manifestLoadingMaxRetry: 4,
+            levelLoadingTimeOut: 15000,
+            fragLoadingTimeOut: 30000,
+          } : {
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 90,
+            maxLoadingDelay: 4,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+          };
+
+          const hls = new Hls(hlsConfig);
+
+          hlsRef.current = hls;
+          hls.loadSource(streamUrl);
+          hls.attachMedia(video);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // Vérifier si c'est un flux offline
+            if (streamUrl.includes('offline')) {
+              setError('⚠️ Cette chaîne est actuellement hors ligne. Essayez une autre chaîne.');
+              setIsLoading(false);
+              hls.destroy();
+              return;
+            }
+
+            setIsLoading(false);
+            setRetryCount(0);
+            // Autoplay avec gestion de l'erreur NotAllowedError
+            video.play().catch(err => {
+              console.log('[Player] Autoplay bloqué, attente interaction utilisateur:', err);
+              setIsPlaying(false);
+            });
+          });
+
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  if (retryCount < 3) {
+                    setError(`Erreur réseau. Tentative ${retryCount + 1}/3...`);
+                    setTimeout(() => {
+                      setRetryCount(prev => prev + 1);
+                      hls.startLoad();
+                    }, 2000);
+                  } else if (useHls && channel.streamUrlFallback) {
+                    setError('Passage au flux TS...');
+                    hls.destroy();
+                    setTimeout(() => getStreamUrl(false), 1000);
+                  } else {
+                    setError('Impossible de charger le flux après 3 tentatives.');
+                    setIsLoading(false);
+                  }
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  setError('Erreur média. Tentative de récupération...');
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  if (useHls && channel.streamUrlFallback) {
+                    setError('Erreur HLS. Passage au flux TS...');
+                    hls.destroy();
+                    setTimeout(() => getStreamUrl(false), 1000);
+                  } else {
+                    setError('Erreur fatale. Impossible de lire le flux.');
+                    hls.destroy();
+                    setIsLoading(false);
+                  }
+                  break;
+              }
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl') || !useHls) {
+          video.src = streamUrl;
+
+          const onLoadedMetadata = () => {
+            setIsLoading(false);
+            setRetryCount(0);
+            // Autoplay avec gestion de l'erreur NotAllowedError
+            video.play().catch(err => {
+              console.log('[Player] Autoplay bloqué, attente interaction utilisateur:', err);
+              setIsPlaying(false);
+            });
+          };
+
+          const onError = () => {
+            if (retryCount < 3) {
+              setError(`Erreur de chargement. Tentative ${retryCount + 1}/3...`);
+              setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+                video.load();
+              }, 2000);
+            } else if (useHls && channel.streamUrlFallback) {
+              setError('Passage au flux TS...');
+              setTimeout(() => getStreamUrl(false), 1000);
+            } else {
+              setError('Impossible de charger le flux après 3 tentatives.');
+              setIsLoading(false);
+            }
+          };
+
+          video.addEventListener('loadedmetadata', onLoadedMetadata);
+          video.addEventListener('error', onError);
+
+          return () => {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+          };
+        } else {
+          setError('Votre navigateur ne supporte pas la lecture de ce flux');
+          setIsLoading(false);
+        }
+      } catch (err: any) {
+        console.error('[Player] Error loading stream:', err);
+        if (retryCount < 3) {
+          setError(`Erreur: ${err.message}. Nouvelle tentative ${retryCount + 1}/3...`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            getStreamUrl(currentUrl.includes('.m3u8'));
+          }, 2000);
+        } else {
+          setError(err.message || 'Erreur lors du chargement du flux');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    getStreamUrl(true, selectedVariant || undefined);
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, [channel, selectedVariant]); // ⚠️ Removed retryCount and currentUrl to avoid infinite loops
+
+  function togglePlay() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error('[Player] Play error:', err);
+        setIsPlaying(false);
+      });
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  }
+
+  function toggleMute() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  }
+
+  function toggleFullscreen() {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  function seekRelative(seconds: number) {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime += seconds;
+  }
+
+  function adjustVolume(delta: number) {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = Math.max(0, Math.min(1, video.volume + delta));
+  }
+
+  function handleQualityChange(variant: XtreamQualityVariant) {
+    setCurrentQuality(variant.quality);
+    setSelectedVariant(variant);
+    setRetryCount(0);
+  }
+
+  let controlsTimeout: NodeJS.Timeout;
+  const handleInteraction = () => {
+    setShowControls(true);
+    clearTimeout(controlsTimeout);
+    controlsTimeout = setTimeout(() => {
+      if (!deviceInfo.isTV) {
+        setShowControls(false);
+      }
+    }, 3000);
+  };
+
+  // Taille des boutons selon l'appareil
+  const buttonSize = deviceInfo.isTV ? 'lg' : deviceInfo.isMobile ? 'sm' : 'default';
+  const iconSize = deviceInfo.isTV ? 'w-10 h-10' : deviceInfo.isMobile ? 'w-5 h-5' : 'w-6 h-6';
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full h-full bg-black group"
+      onMouseMove={handleInteraction}
+      onMouseLeave={() => !deviceInfo.isTouchDevice && setShowControls(false)}
+      onTouchStart={handleInteraction}
+    >
+      <video
+        ref={videoRef}
+        className="w-full h-full object-contain"
+        playsInline
+        onClick={deviceInfo.isDesktop ? togglePlay : undefined}
+      />
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="text-center">
+            <div className={`animate-spin rounded-full border-b-2 border-primary-500 mx-auto mb-4 ${
+              deviceInfo.isTV ? 'h-24 w-24' : 'h-16 w-16'
+            }`} />
+            <p className={`text-white ${deviceInfo.isTV ? 'text-2xl' : 'text-base'}`}>
+              Chargement du flux...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Overlay */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+          <div className="text-center max-w-md p-6">
+            <p className={`text-red-400 mb-4 ${deviceInfo.isTV ? 'text-2xl' : 'text-lg'}`}>
+              {error}
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              size={buttonSize}
+            >
+              Réessayer
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Info Overlay (Android TV) */}
+      {showInfo && deviceInfo.isTV && (
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-8">
+          <h1 className="text-4xl font-bold text-white mb-2">{channel.name}</h1>
+          <p className="text-xl text-gray-300">Qualité: {currentQuality}</p>
+        </div>
+      )}
+
+      {/* Controls */}
+      {!isLoading && !error && (
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 ${
+            showControls || deviceInfo.isTV ? 'opacity-100' : 'opacity-0'
+          } ${deviceInfo.isTV ? 'p-8' : deviceInfo.isMobile ? 'p-3' : 'p-4'}`}
+        >
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Previous Channel (Mobile/TV) */}
+            {(deviceInfo.isMobile || deviceInfo.isTV) && onPreviousChannel && (
+              <Button
+                size={buttonSize}
+                variant="ghost"
+                className="text-white"
+                onClick={onPreviousChannel}
+              >
+                <SkipBack className={iconSize} />
+              </Button>
+            )}
+
+            {/* Play/Pause */}
+            <Button
+              size={buttonSize}
+              variant="ghost"
+              className="text-white"
+              onClick={togglePlay}
+            >
+              {isPlaying ? <Pause className={iconSize} /> : <Play className={iconSize} />}
+            </Button>
+
+            {/* Next Channel (Mobile/TV) */}
+            {(deviceInfo.isMobile || deviceInfo.isTV) && onNextChannel && (
+              <Button
+                size={buttonSize}
+                variant="ghost"
+                className="text-white"
+                onClick={onNextChannel}
+              >
+                <SkipForward className={iconSize} />
+              </Button>
+            )}
+
+            {/* Volume */}
+            <Button
+              size={buttonSize}
+              variant="ghost"
+              className="text-white"
+              onClick={toggleMute}
+            >
+              {isMuted ? <VolumeX className={iconSize} /> : <Volume2 className={iconSize} />}
+            </Button>
+
+            <div className="flex-1" />
+
+            {/* Info (Android TV) */}
+            {deviceInfo.isTV && (
+              <Button
+                size={buttonSize}
+                variant="ghost"
+                className="text-white"
+                onClick={() => setShowInfo(!showInfo)}
+              >
+                <Info className={iconSize} />
+              </Button>
+            )}
+
+            {/* Quality Selector */}
+            {channel.qualityVariants && channel.qualityVariants.length > 1 && (
+              <QualitySelector
+                variants={channel.qualityVariants}
+                currentQuality={currentQuality}
+                onQualityChange={handleQualityChange}
+              />
+            )}
+
+            {/* Fullscreen */}
+            <Button
+              size={buttonSize}
+              variant="ghost"
+              className="text-white"
+              onClick={toggleFullscreen}
+            >
+              <Maximize className={iconSize} />
+            </Button>
+          </div>
+
+          {/* Mobile: Channel Name */}
+          {deviceInfo.isMobile && (
+            <div className="mt-2">
+              <p className="text-white text-sm font-medium truncate">{channel.name}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile: Swipe Indicators */}
+      {deviceInfo.isMobile && showControls && (
+        <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none">
+          {onPreviousChannel && (
+            <div className="text-white/30 text-xs">
+              ← Précédent
+            </div>
+          )}
+          {onNextChannel && (
+            <div className="text-white/30 text-xs">
+              Suivant →
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

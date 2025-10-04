@@ -49,6 +49,11 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
         } else {
           streamUrl = useHls ? channel.streamUrl : (channel.streamUrlFallback || channel.streamUrl);
         }
+
+        // MOBILE FIX: Ne PAS passer par le proxy pour éviter erreur 509
+        // Les navigateurs mobiles supportent le chargement direct HTTP → HTTPS
+        // Le proxy est désactivé car il cause bandwidth limit exceeded
+
         setCurrentUrl(streamUrl);
 
         // If RTMP, request transcoding
@@ -145,8 +150,17 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
           const onLoadedMetadata = () => {
             setIsLoading(false);
             setRetryCount(0);
-            video.play();
-            setIsPlaying(true);
+            // Autoplay avec gestion de l'erreur NotAllowedError
+            // Mobile: essayer d'abord avec son, puis muted si bloqué
+            video.play().catch(err => {
+              console.log('[Player] Autoplay bloqué, essai en mode muet...', err);
+              video.muted = true;
+              setIsMuted(true);
+              video.play().catch(err2 => {
+                console.log('[Player] Autoplay muet bloqué, attente interaction:', err2);
+                setIsPlaying(false);
+              });
+            });
           };
 
           const onError = () => {
@@ -207,8 +221,12 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
     if (!video) return;
 
     if (video.paused) {
-      video.play();
-      setIsPlaying(true);
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.error('[Player] Play error:', err);
+        setIsPlaying(false);
+      });
     } else {
       video.pause();
       setIsPlaying(false);
@@ -258,6 +276,9 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
         ref={videoRef}
         className="w-full h-full object-contain"
         playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
+        preload="auto"
         onClick={togglePlay}
       />
 

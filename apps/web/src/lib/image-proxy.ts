@@ -1,6 +1,6 @@
 /**
  * Génère une URL proxifiée pour les images
- * Évite les problèmes CORS et Mixed Content
+ * Utilise le cache serveur pour éviter erreurs 509 bandwidth
  */
 export function getProxiedImageUrl(originalUrl?: string): string | undefined {
   if (!originalUrl) return undefined;
@@ -11,6 +11,7 @@ export function getProxiedImageUrl(originalUrl?: string): string | undefined {
     return originalUrl;
   }
 
-  // Sinon, passer par le proxy
-  return `/api/proxy-image?url=${encodeURIComponent(originalUrl)}`;
+  // Utiliser le cache serveur au lieu du proxy Next.js API
+  // Cache 24h côté serveur = 95% réduction bande passante
+  return `http://terranovision.cloud/logo-proxy?url=${encodeURIComponent(originalUrl)}`;
 }

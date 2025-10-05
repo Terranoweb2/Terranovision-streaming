@@ -24,6 +24,7 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
   const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(50);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
@@ -150,16 +151,15 @@ export function VideoPlayer({ channel }: VideoPlayerProps) {
           const onLoadedMetadata = () => {
             setIsLoading(false);
             setRetryCount(0);
-            // Autoplay avec gestion de l'erreur NotAllowedError
-            // Mobile: essayer d'abord avec son, puis muted si bloqué
+            // Volume par défaut à 50%
+            video.volume = 0.5;
+            video.muted = false;
+            setVolume(50);
+            setIsMuted(false);
+            // Autoplay
             video.play().catch(err => {
-              console.log('[Player] Autoplay bloqué, essai en mode muet...', err);
-              video.muted = true;
-              setIsMuted(true);
-              video.play().catch(err2 => {
-                console.log('[Player] Autoplay muet bloqué, attente interaction:', err2);
-                setIsPlaying(false);
-              });
+              console.log('[Player] Autoplay bloqué:', err);
+              setIsPlaying(false);
             });
           };
 

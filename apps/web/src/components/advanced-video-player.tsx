@@ -48,8 +48,8 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
 
   // États du lecteur
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(50);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +97,16 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
     const video = videoRef.current;
     if (!video) return;
 
+    // Détection avancée de l'appareil
+    const ua = navigator.userAgent.toLowerCase();
+    const isAndroid = /android/i.test(ua);
+    const isIOS = /iphone|ipad|ipod/i.test(ua);
+    const isTV = /tv|smarttv|googletv|appletv|hbbtv|pov_tv|netcast/i.test(ua) ||
+                 (window.innerWidth >= 1920 && window.innerHeight >= 1080);
+    const isMobileDevice = isMobile || isAndroid || isIOS;
+
+    console.log('[Player] Device detection:', { isMobile, isAndroid, isIOS, isTV, isMobileDevice });
+
     const getStreamUrl = async (useHls = true, variant?: XtreamQualityVariant) => {
       try {
         setIsLoading(true);
@@ -106,22 +116,44 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
         if (variant) {
           streamUrl = useHls ? variant.urlHls : variant.urlTs;
         } else {
-          // Mobile : préférer TS, Desktop : préférer HLS
-          streamUrl = isMobile
-            ? (channel.streamUrlFallback || channel.streamUrl)
-            : (channel.streamUrl || channel.streamUrlFallback || '');
+          // Mobile/Android/TV : TOUJOURS préférer TS (meilleure compatibilité)
+          // Desktop : HLS pour qualité adaptative
+          if (isMobileDevice || isTV) {
+            streamUrl = channel.streamUrlFallback || channel.streamUrl;
+            console.log('[Player] Using TS stream for mobile/TV:', streamUrl);
+          } else {
+            streamUrl = channel.streamUrl || channel.streamUrlFallback || '';
+            console.log('[Player] Using HLS stream for desktop:', streamUrl);
+          }
         }
 
-        // Support HLS.js pour navigateurs non-Safari
-        if (Hls.isSupported() && (streamUrl.endsWith('.m3u8') || useHls)) {
+        // Mobile/Android/TV : Forcer lecture native TS (pas HLS.js)
+        const shouldUseNativePlayer = (isMobileDevice || isTV) && streamUrl.endsWith('.ts');
+
+        if (!shouldUseNativePlayer && Hls.isSupported() && streamUrl.endsWith('.m3u8')) {
+          console.log('[Player] Using HLS.js for', isMobileDevice ? 'mobile' : 'desktop');
           const hls = new Hls({
             enableWorker: true,
-            lowLatencyMode: false,
-            maxBufferLength: isMobile ? 10 : 30,
-            maxMaxBufferLength: isMobile ? 20 : 60,
+            lowLatencyMode: true,
+            backBufferLength: 90,
+            // Optimisations mobile/TV pour chargement rapide
+            maxBufferLength: (isMobileDevice || isTV) ? 3 : 30,
+            maxMaxBufferLength: (isMobileDevice || isTV) ? 8 : 60,
             maxBufferSize: 60 * 1000 * 1000,
-            maxBufferHole: 0.5,
-            highBufferWatchdogPeriod: 2,
+            maxBufferHole: 0.3,
+            highBufferWatchdogPeriod: 1,
+            // Chargement plus agressif
+            startLevel: -1, // Auto-select quality
+            abrEwmaDefaultEstimate: (isMobileDevice || isTV) ? 300000 : 500000,
+            manifestLoadingTimeOut: 10000,
+            manifestLoadingMaxRetry: 5,
+            manifestLoadingRetryDelay: 300,
+            levelLoadingTimeOut: 10000,
+            levelLoadingMaxRetry: 3,
+            levelLoadingRetryDelay: 300,
+            fragLoadingTimeOut: 20000,
+            fragLoadingMaxRetry: 5,
+            fragLoadingRetryDelay: 300,
           });
 
           hlsRef.current = hls;
@@ -131,72 +163,231 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             setIsLoading(false);
             setRetryCount(0);
-            video.muted = true;
-            setIsMuted(true);
-            video.play().catch(() => setIsPlaying(false));
-            setIsPlaying(true);
-            setConnectionQuality('excellent');
+            video.muted = false;
+            video.volume = 0.5;
+            setIsMuted(false);
+            setVolume(50);
+
+            // Forcer lecture sur mobile/Android/TV avec plusieurs tentatives
+            const forcePlay = async () => {
+              try {
+                await video.play();
+                setIsPlaying(true);
+                setConnectionQuality('excellent');
+                console.log('[Player] Playback started successfully');
+              } catch (err: any) {
+                console.log('[Player] Autoplay blocked, retrying...', err.message);
+                // Retry avec interaction utilisateur simulée
+                setTimeout(async () => {
+                  try {
+                    video.muted = true;
+                    await video.play();
+                    video.muted = false;
+                    video.volume = 0.5;
+                    setIsPlaying(true);
+                    console.log('[Player] Playback started after retry');
+                  } catch (err2) {
+                    console.log('[Player] Waiting for user interaction');
+                    setIsPlaying(false);
+                  }
+                }, 100);
+              }
+            };
+
+            forcePlay();
           });
 
+          // Gestion avancée des erreurs avec recovery automatique
+          let mediaErrorRecoveryCount = 0;
+          let networkErrorRecoveryCount = 0;
+
           hls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) {
-              setConnectionQuality('offline');
+            // Logging uniquement en mode dev
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Player] HLS Error:', data.type, data.details, data);
+            }
 
-              switch (data.type) {
-                case Hls.ErrorTypes.NETWORK_ERROR:
-                  if (retryCount < 2) {
-                    setError(`Reconnexion... ${retryCount + 1}/2`);
-                    setTimeout(() => {
-                      setRetryCount(prev => prev + 1);
-                      hls.startLoad();
-                    }, 2000);
-                  } else if (useHls && channel.streamUrlFallback) {
-                    setError('Basculement vers flux TS...');
-                    hls.destroy();
-                    setTimeout(() => getStreamUrl(false), 1000);
-                  } else {
-                    setError('Flux indisponible');
-                    setIsLoading(false);
-                  }
-                  break;
-
-                case Hls.ErrorTypes.MEDIA_ERROR:
-                  setError('Récupération...');
-                  hls.recoverMediaError();
-                  break;
-
-                default:
-                  if (useHls && channel.streamUrlFallback) {
-                    setError('Basculement vers flux alternatif...');
-                    hls.destroy();
-                    setTimeout(() => getStreamUrl(false), 1000);
-                  } else {
-                    setError('Erreur de lecture');
-                    hls.destroy();
-                    setIsLoading(false);
-                  }
+            // Erreurs non fatales - continuer la lecture silencieusement
+            if (!data.fatal) {
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                setConnectionQuality('poor');
               }
+              return;
+            }
+
+            // Erreurs fatales - recovery automatique
+            setConnectionQuality('offline');
+
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                networkErrorRecoveryCount++;
+
+                if (networkErrorRecoveryCount <= 5) {
+                  // Recovery silencieux - pas de message d'erreur
+                  setError(null);
+                  setRetryCount(networkErrorRecoveryCount);
+                  const retryDelay = Math.min(networkErrorRecoveryCount * 200, 1000);
+                  setTimeout(() => {
+                    hls.startLoad();
+                  }, retryDelay);
+                } else if (useHls && channel.streamUrlFallback) {
+                  // Basculement vers TS après 5 tentatives
+                  setError(null);
+                  setRetryCount(0);
+                  networkErrorRecoveryCount = 0;
+                  hls.destroy();
+                  setTimeout(() => getStreamUrl(false), 200);
+                } else {
+                  // Forcer le rechargement même sans fallback
+                  setError(null);
+                  setTimeout(() => {
+                    networkErrorRecoveryCount = 0;
+                    setRetryCount(0);
+                    hls.startLoad();
+                  }, 1000);
+                }
+                break;
+
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                mediaErrorRecoveryCount++;
+
+                if (mediaErrorRecoveryCount <= 3) {
+                  // Recovery silencieux
+                  setError(null);
+                  setRetryCount(mediaErrorRecoveryCount);
+                  if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+                    hls.startLoad();
+                  } else {
+                    hls.recoverMediaError();
+                  }
+                } else {
+                  // Swap audio codec après 3 tentatives
+                  setError(null);
+                  hls.swapAudioCodec();
+                  hls.recoverMediaError();
+                  mediaErrorRecoveryCount = 0;
+                  setRetryCount(0);
+                }
+                break;
+
+              default:
+                // Recovery silencieux pour toutes les autres erreurs
+                setError(null);
+                if (useHls && channel.streamUrlFallback) {
+                  hls.destroy();
+                  setTimeout(() => getStreamUrl(false), 200);
+                } else {
+                  setTimeout(() => {
+                    hls.destroy();
+                    getStreamUrl(useHls);
+                  }, 1000);
+                }
             }
           });
 
-          // Monitoring de la qualité
+          // Monitoring de la qualité et auto-recovery
           hls.on(Hls.Events.FRAG_BUFFERED, () => {
             setConnectionQuality('excellent');
+            setError(null);
+            // Reset compteurs après succès
+            mediaErrorRecoveryCount = 0;
+            networkErrorRecoveryCount = 0;
+          });
+
+          hls.on(Hls.Events.FRAG_LOADED, () => {
+            setConnectionQuality('good');
+            setError(null);
+          });
+
+          // Détection de stalling et auto-recovery silencieux
+          let stallTimeout: NodeJS.Timeout;
+          const checkStalling = () => {
+            if (video.readyState < 3 && !video.paused && !isLoading) {
+              // Recovery silencieux sans message
+              setError(null);
+              hls.startLoad();
+            }
+          };
+
+          video.addEventListener('waiting', () => {
+            setConnectionQuality('poor');
+            stallTimeout = setTimeout(checkStalling, 3000);
+          });
+
+          video.addEventListener('playing', () => {
+            clearTimeout(stallTimeout);
+            setConnectionQuality('excellent');
+            setError(null);
+            setRetryCount(0);
+            setIsPlaying(true);
+            setIsLoading(false);
+          });
+
+          video.addEventListener('canplay', () => {
+            clearTimeout(stallTimeout);
+            setConnectionQuality('good');
+            setError(null);
           });
 
         }
-        // Support HLS natif (Safari iOS)
-        else if (video.canPlayType('application/vnd.apple.mpegurl') || !useHls) {
+        // Support natif (Safari iOS, Android, TV, TS direct)
+        else {
+          console.log('[Player] Using native player for:', streamUrl);
           video.src = streamUrl;
 
           const onLoadedMetadata = () => {
             setIsLoading(false);
             setRetryCount(0);
-            video.muted = true;
-            setIsMuted(true);
-            video.play().catch(() => setIsPlaying(false));
-            setIsPlaying(true);
-            setConnectionQuality('good');
+            video.muted = false;
+            video.volume = 0.5;
+            setIsMuted(false);
+            setVolume(50);
+
+            // Forcer lecture sur mobile/Android/TV avec plusieurs stratégies
+            const forceNativePlay = async () => {
+              try {
+                // Stratégie 1: Lecture directe
+                await video.play();
+                setIsPlaying(true);
+                setConnectionQuality('good');
+                console.log('[Player] Native playback started');
+              } catch (err: any) {
+                console.log('[Player] Native autoplay blocked, trying alternatives...', err.message);
+
+                // Stratégie 2: Mute puis unmute
+                try {
+                  video.muted = true;
+                  await video.play();
+                  setTimeout(() => {
+                    video.muted = false;
+                    video.volume = 0.5;
+                  }, 500);
+                  setIsPlaying(true);
+                  console.log('[Player] Native playback started (muted first)');
+                } catch (err2) {
+                  // Stratégie 3: Attendre interaction utilisateur
+                  console.log('[Player] Waiting for user tap to start playback');
+                  setIsPlaying(false);
+
+                  // Sur mobile/TV, forcer au premier clic
+                  const startOnInteraction = async () => {
+                    try {
+                      await video.play();
+                      setIsPlaying(true);
+                      document.removeEventListener('click', startOnInteraction);
+                      document.removeEventListener('touchstart', startOnInteraction);
+                    } catch (e) {
+                      console.log('[Player] Still blocked');
+                    }
+                  };
+
+                  document.addEventListener('click', startOnInteraction, { once: true });
+                  document.addEventListener('touchstart', startOnInteraction, { once: true });
+                }
+              }
+            };
+
+            forceNativePlay();
           };
 
           const onError = () => {
@@ -223,9 +414,6 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
             video.removeEventListener('loadedmetadata', onLoadedMetadata);
             video.removeEventListener('error', onError);
           };
-        } else {
-          setError('Navigateur non supporté');
-          setIsLoading(false);
         }
       } catch (err: any) {
         setError(err.message || 'Erreur de chargement');
@@ -426,30 +614,26 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
         playsInline
         webkit-playsinline="true"
         x5-playsinline="true"
-        preload="auto"
+        x-webkit-airplay="allow"
+        preload="metadata"
+        crossOrigin="anonymous"
       />
 
-      {/* Overlay de chargement */}
-      {isLoading && (
+      {/* Overlay de chargement - Masqué pendant recovery automatique */}
+      {isLoading && retryCount === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="text-center">
             <Loader2 className="w-16 h-16 text-primary-500 animate-spin mx-auto mb-4" />
             <p className="text-white text-lg">Chargement du flux...</p>
-            {retryCount > 0 && (
-              <p className="text-gray-400 text-sm mt-2">Tentative {retryCount}/2</p>
-            )}
           </div>
         </div>
       )}
 
-      {/* Overlay d'erreur */}
-      {error && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="text-center max-w-md p-6">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <p className="text-red-400 text-lg mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>Réessayer</Button>
-          </div>
+      {/* Indicateur de reconnexion discret - En bas à droite */}
+      {(error || retryCount > 0) && isLoading && (
+        <div className="absolute bottom-20 right-4 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
+          <span className="text-yellow-500 text-sm">Reconnexion...</span>
         </div>
       )}
 

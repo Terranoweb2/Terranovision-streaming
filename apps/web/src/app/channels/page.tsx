@@ -83,7 +83,7 @@ export default function ChannelsPage() {
 
     if (categoryLower.includes('doc') || categoryLower.includes('documentaire') ||
         (docCount > channelsInCat.length / 2)) {
-      return '📚 Documentaires';
+      return '🌍 Documentaires';
     }
 
     // 3. Cinéma et films (avant Canal+ pour détecter Canal+ Cinéma)
@@ -95,7 +95,7 @@ export default function ChannelsPage() {
 
     if (categoryLower.includes('cine') || categoryLower.includes('film') ||
         categoryLower.includes('movie') || (cinemaCount > channelsInCat.length / 2)) {
-      return '🎬 Cinéma';
+      return '🎞️ Cinéma';
     }
 
     // 4. Canal+ et bouquets premium
@@ -130,7 +130,7 @@ export default function ChannelsPage() {
     // 7. Magazines et divertissement
     if (categoryLower.includes('magazine') || categoryLower.includes('divertissement') ||
         categoryLower.includes('entertainment') || channelNames.includes('magazine')) {
-      return '📖 Magazines';
+      return '🎪 Magazines';
     }
 
     // 8. Enfants
@@ -142,7 +142,7 @@ export default function ChannelsPage() {
 
     if (categoryLower.includes('kid') || categoryLower.includes('enfant') ||
         categoryLower.includes('children') || (kidsCount > 0)) {
-      return '👶 Enfants';
+      return '🎨 Enfants';
     }
 
     // 9. Actualités et info
@@ -163,7 +163,7 @@ export default function ChannelsPage() {
     // 11. Culture et arts
     if (categoryLower.includes('culture') || categoryLower.includes('art') ||
         channelNames.includes('arte') || channelNames.includes('museum')) {
-      return '🎨 Culture';
+      return '🎭 Culture';
     }
 
     // 12. Régions et langues

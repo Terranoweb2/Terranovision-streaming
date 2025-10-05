@@ -32,7 +32,22 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error('[Stream Proxy] Failed:', response.status, response.statusText);
+      // Ne pas logger les 404 (chaînes offline normales)
+      if (response.status !== 404) {
+        console.error('[Stream Proxy] Failed:', response.status, response.statusText);
+      }
+
+      // Pour les segments .ts, retourner 204 No Content au lieu de 404 pour éviter logs console
+      if (streamUrl.endsWith('.ts')) {
+        return new NextResponse(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          }
+        });
+      }
+
+      // Pour les M3U8, retourner l'erreur normale
       return NextResponse.json(
         { error: 'Stream not available', status: response.status },
         { status: response.status }

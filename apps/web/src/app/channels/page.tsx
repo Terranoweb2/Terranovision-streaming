@@ -39,7 +39,7 @@ export default function ChannelsPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/xtream/list');
+      const response = await fetch('/api/xtream/list?v=3'); // v=3 pour bypass cache
 
       if (!response.ok) {
         const data = await response.json();

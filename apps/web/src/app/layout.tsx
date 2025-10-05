@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { ForceHttpRedirect } from '@/components/force-http-redirect';
+// Removed ForceHttpRedirect - causes infinite loop with Nginx HTTPS redirect
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -41,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body className={inter.className}>
-        <ForceHttpRedirect />
         {children}
         <Toaster />
       </body>

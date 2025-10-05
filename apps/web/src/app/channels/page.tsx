@@ -39,7 +39,14 @@ export default function ChannelsPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/xtream/list?v=3'); // v=3 pour bypass cache
+      // Force bypass cache avec timestamp
+      const response = await fetch(`/api/xtream/list?v=3&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
 
       if (!response.ok) {
         const data = await response.json();

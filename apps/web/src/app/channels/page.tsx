@@ -18,6 +18,8 @@ export default function ChannelsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [categories, setCategories] = useState<string[]>([]);
+  const [isMockMode, setIsMockMode] = useState(false);
+  const [mockMessage, setMockMessage] = useState<string | null>(null);
 
   // Device detection for responsive design
   const deviceInfo = useDeviceDetection();
@@ -47,6 +49,12 @@ export default function ChannelsPage() {
       const data = await response.json();
       setChannels(data.channels || []);
       setFilteredChannels(data.channels || []);
+
+      // Détecter le mode mock
+      if (data.mode === 'mock') {
+        setIsMockMode(true);
+        setMockMessage(data.message || 'Mode démonstration actif');
+      }
 
       // Extraire les catégories uniques
       const uniqueCategories = Array.from(
@@ -277,6 +285,25 @@ export default function ChannelsPage() {
             </div>
           </div>
         </header>
+      )}
+
+      {/* Bandeau Mode TEST */}
+      {isMockMode && (
+        <div className="bg-amber-500/20 border-b border-amber-500/50 backdrop-blur-sm">
+          <div className={`${responsiveClasses.container} ${responsiveClasses.padding}`}>
+            <div className="flex items-center gap-3 py-2">
+              <AlertCircle className={`${deviceInfo.isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-amber-400 flex-shrink-0`} />
+              <div className="flex-1">
+                <p className={`${responsiveClasses.text.base} text-amber-100 font-medium`}>
+                  {mockMessage || 'Mode Démonstration'}
+                </p>
+                <p className={`${responsiveClasses.text.small} text-amber-200/80 mt-0.5`}>
+                  Chaînes de test utilisées • Le serveur Xtream est temporairement indisponible
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Mobile Search Bar */}
@@ -674,15 +701,21 @@ function ChannelsByCategory({
                     className="group relative aspect-square bg-secondary-800 rounded-lg overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
                   >
                     {channel.logo && getProxiedImageUrl(channel.logo) ? (
-                      <img
-                        src={getProxiedImageUrl(channel.logo)}
-                        alt={channel.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
+                      <div className="w-full h-full flex items-center justify-center p-2">
+                        <img
+                          src={getProxiedImageUrl(channel.logo)}
+                          alt={channel.name}
+                          className="max-w-[70%] max-h-[70%] object-contain group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<span class="' + (deviceInfo.isMobile ? 'text-2xl' : deviceInfo.isTV ? 'text-6xl' : 'text-4xl') + '">📺</span>';
+                            }
+                          }}
+                        />
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-500">
                         <span className={deviceInfo.isMobile ? 'text-2xl' : deviceInfo.isTV ? 'text-6xl' : 'text-4xl'}>📺</span>
@@ -706,7 +739,7 @@ function ChannelsByCategory({
                       <img
                         src={getProxiedImageUrl(channel.logo)}
                         alt={channel.name}
-                        className={`${logoSize} object-cover rounded`}
+                        className={`${logoSize} object-contain rounded`}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';

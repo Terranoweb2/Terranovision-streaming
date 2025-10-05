@@ -67,16 +67,26 @@ export async function GET(request: NextRequest) {
         }
 
         // Convertir vers notre format
-        const xtreamChannels: XtreamChannel[] = data.map((channel: any) => ({
-          id: parseInt(channel.stream_id || channel.num),
-          name: channel.name,
-          logo: channel.stream_icon || undefined,
-          category: channel.category_name || channel.category_id || 'Général',
-          urlHls: `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${channel.stream_id}.m3u8`,
-          urlTs: `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${channel.stream_id}.ts`,
-          quality: 'HD',
-          epgChannelId: channel.epg_channel_id || undefined,
-        }));
+        const xtreamChannels: XtreamChannel[] = data.map((channel: any) => {
+          const streamId = channel.stream_id;
+          const originalHls = `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${streamId}.m3u8`;
+          const originalTs = `${XTREAM_CONFIG.host}/live/${XTREAM_CONFIG.username}/${XTREAM_CONFIG.password}/${streamId}.ts`;
+
+          // Utiliser le proxy pour contourner les problèmes DNS sur mobile
+          const proxiedHls = `/api/stream/proxy?url=${encodeURIComponent(originalHls)}`;
+          const proxiedTs = `/api/stream/proxy?url=${encodeURIComponent(originalTs)}`;
+
+          return {
+            id: parseInt(streamId || channel.num),
+            name: channel.name,
+            logo: channel.stream_icon || undefined,
+            category: channel.category_name || channel.category_id || 'Général',
+            urlHls: proxiedHls,
+            urlTs: proxiedTs,
+            quality: 'HD',
+            epgChannelId: channel.epg_channel_id || undefined,
+          };
+        });
 
         console.log(`[API] Successfully loaded ${xtreamChannels.length} channels from Xtream API`);
         return xtreamChannels;

@@ -163,34 +163,69 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             setIsLoading(false);
             setRetryCount(0);
-            video.muted = false;
-            video.volume = 0.5;
-            setIsMuted(false);
-            setVolume(50);
 
-            // Forcer lecture sur mobile/Android/TV avec plusieurs tentatives
+            // Forcer lecture sur mobile/Android/TV avec stratégie ultra-agressive
             const forcePlay = async () => {
-              try {
-                await video.play();
-                setIsPlaying(true);
-                setConnectionQuality('excellent');
-                console.log('[Player] Playback started successfully');
-              } catch (err: any) {
-                console.log('[Player] Autoplay blocked, retrying...', err.message);
-                // Retry avec interaction utilisateur simulée
-                setTimeout(async () => {
-                  try {
-                    video.muted = true;
-                    await video.play();
+              // Sur mobile, toujours commencer muted puis unmute
+              if (isMobileDevice || isTV) {
+                try {
+                  console.log('[Player] Mobile detected - starting muted');
+                  video.muted = true;
+                  video.volume = 0.5;
+                  await video.play();
+
+                  // Unmute après 300ms
+                  setTimeout(() => {
                     video.muted = false;
-                    video.volume = 0.5;
-                    setIsPlaying(true);
-                    console.log('[Player] Playback started after retry');
-                  } catch (err2) {
-                    console.log('[Player] Waiting for user interaction');
-                    setIsPlaying(false);
-                  }
-                }, 100);
+                    setIsMuted(false);
+                    setVolume(50);
+                    console.log('[Player] Mobile playback unmuted');
+                  }, 300);
+
+                  setIsPlaying(true);
+                  setConnectionQuality('excellent');
+                  console.log('[Player] Mobile playback started');
+                } catch (err: any) {
+                  console.log('[Player] Mobile autoplay failed, waiting for tap', err.message);
+                  setIsPlaying(false);
+
+                  // Attendre le tap utilisateur
+                  const startOnTap = async (e: Event) => {
+                    e.preventDefault();
+                    try {
+                      video.muted = false;
+                      video.volume = 0.5;
+                      await video.play();
+                      setIsPlaying(true);
+                      setIsMuted(false);
+                      setVolume(50);
+                      console.log('[Player] Started after user tap');
+                    } catch (e2) {
+                      console.log('[Player] Still blocked after tap');
+                    }
+                  };
+
+                  // Écouter tous les types d'interaction
+                  document.addEventListener('touchstart', startOnTap, { once: true, passive: false });
+                  document.addEventListener('touchend', startOnTap, { once: true, passive: false });
+                  document.addEventListener('click', startOnTap, { once: true });
+                  video.addEventListener('click', startOnTap, { once: true });
+                }
+              } else {
+                // Desktop - lecture normale
+                try {
+                  video.muted = false;
+                  video.volume = 0.5;
+                  setIsMuted(false);
+                  setVolume(50);
+                  await video.play();
+                  setIsPlaying(true);
+                  setConnectionQuality('excellent');
+                  console.log('[Player] Desktop playback started');
+                } catch (err: any) {
+                  console.log('[Player] Desktop autoplay blocked', err.message);
+                  setIsPlaying(false);
+                }
               }
             };
 
@@ -338,51 +373,98 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
           const onLoadedMetadata = () => {
             setIsLoading(false);
             setRetryCount(0);
-            video.muted = false;
-            video.volume = 0.5;
-            setIsMuted(false);
-            setVolume(50);
 
-            // Forcer lecture sur mobile/Android/TV avec plusieurs stratégies
+            // Forcer lecture native sur mobile/Android/TV avec stratégie ultra-agressive
             const forceNativePlay = async () => {
-              try {
-                // Stratégie 1: Lecture directe
-                await video.play();
-                setIsPlaying(true);
-                setConnectionQuality('good');
-                console.log('[Player] Native playback started');
-              } catch (err: any) {
-                console.log('[Player] Native autoplay blocked, trying alternatives...', err.message);
+              // Sur mobile/TV, TOUJOURS commencer muted
+              if (isMobileDevice || isTV) {
+                console.log('[Player] Native mobile/TV - starting muted');
+                video.muted = true;
+                video.volume = 0.5;
 
-                // Stratégie 2: Mute puis unmute
                 try {
-                  video.muted = true;
+                  // Tentative 1: Play muted
                   await video.play();
+                  console.log('[Player] Native mobile playback started (muted)');
+
+                  // Unmute progressivement après 200ms
                   setTimeout(() => {
                     video.muted = false;
-                    video.volume = 0.5;
-                  }, 500);
+                    setIsMuted(false);
+                    setVolume(50);
+                    console.log('[Player] Native mobile unmuted');
+                  }, 200);
+
                   setIsPlaying(true);
-                  console.log('[Player] Native playback started (muted first)');
-                } catch (err2) {
-                  // Stratégie 3: Attendre interaction utilisateur
-                  console.log('[Player] Waiting for user tap to start playback');
+                  setConnectionQuality('good');
+                } catch (err: any) {
+                  console.log('[Player] Native mobile autoplay failed, waiting for interaction', err.message);
                   setIsPlaying(false);
 
-                  // Sur mobile/TV, forcer au premier clic
-                  const startOnInteraction = async () => {
+                  // Afficher un message visible pour encourager le tap
+                  const playButton = document.createElement('div');
+                  playButton.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    padding: 20px 40px;
+                    border-radius: 12px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    z-index: 1000;
+                    backdrop-filter: blur(10px);
+                  `;
+                  playButton.innerHTML = '▶️ Appuyez pour lire';
+                  containerRef.current?.appendChild(playButton);
+
+                  // Fonction de démarrage au tap
+                  const startOnTap = async (e: Event) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
                     try {
+                      video.muted = false;
+                      video.volume = 0.5;
                       await video.play();
                       setIsPlaying(true);
-                      document.removeEventListener('click', startOnInteraction);
-                      document.removeEventListener('touchstart', startOnInteraction);
-                    } catch (e) {
-                      console.log('[Player] Still blocked');
+                      setIsMuted(false);
+                      setVolume(50);
+                      setConnectionQuality('good');
+                      console.log('[Player] Native started after user tap');
+
+                      // Retirer le bouton
+                      playButton.remove();
+                    } catch (e2) {
+                      console.log('[Player] Still blocked after tap', e2);
                     }
                   };
 
-                  document.addEventListener('click', startOnInteraction, { once: true });
-                  document.addEventListener('touchstart', startOnInteraction, { once: true });
+                  // Écouter tous les événements possibles
+                  playButton.addEventListener('touchstart', startOnTap, { passive: false });
+                  playButton.addEventListener('click', startOnTap);
+                  video.addEventListener('touchstart', startOnTap, { once: true, passive: false });
+                  video.addEventListener('click', startOnTap, { once: true });
+                  document.addEventListener('touchstart', startOnTap, { once: true, passive: false });
+                  document.addEventListener('click', startOnTap, { once: true });
+                }
+              } else {
+                // Desktop - lecture normale
+                try {
+                  video.muted = false;
+                  video.volume = 0.5;
+                  setIsMuted(false);
+                  setVolume(50);
+                  await video.play();
+                  setIsPlaying(true);
+                  setConnectionQuality('good');
+                  console.log('[Player] Native desktop playback started');
+                } catch (err: any) {
+                  console.log('[Player] Native desktop autoplay blocked', err.message);
+                  setIsPlaying(false);
                 }
               }
             };
@@ -612,11 +694,13 @@ export function AdvancedVideoPlayer({ channel, onPrevious, onNext }: AdvancedVid
         ref={videoRef}
         className="w-full h-full object-contain"
         playsInline
-        webkit-playsinline="true"
-        x5-playsinline="true"
-        x-webkit-airplay="allow"
-        preload="metadata"
+        autoPlay
+        muted={false}
+        preload="auto"
         crossOrigin="anonymous"
+        style={{ WebkitPlaysinline: 'true' } as any}
+        data-x5-playsinline="true"
+        data-webkit-playsinline="true"
       />
 
       {/* Overlay de chargement - Masqué pendant recovery automatique */}

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer les chaînes depuis l'API Xtream avec cache
-    const cacheKey = 'xtream:channels';
+    const cacheKey = 'xtream:channels:v2'; // v2 = with proxy URLs
     const channels = await withCache(
       cacheKey,
       async () => {
